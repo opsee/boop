@@ -1,0 +1,41 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"path": "github.com/opsee/basic/schema",
+			"revision": "d1ecdcda4060b129bfff973a0ac3be002ec23729",
+			"revisionTime": "2016-02-26T16:00:53-08:00"
+		},
+		{
+			"path": "github.com/opsee/basic/schema/aws/autoscaling",
+			"revision": "d1ecdcda4060b129bfff973a0ac3be002ec23729",
+			"revisionTime": "2016-02-26T16:00:53-08:00"
+		},
+		{
+			"path": "github.com/opsee/basic/schema/aws/credentials",
+			"revision": "d1ecdcda4060b129bfff973a0ac3be002ec23729",
+			"revisionTime": "2016-02-26T16:00:53-08:00"
+		},
+		{
+			"path": "github.com/opsee/basic/schema/aws/ec2",
+			"revision": "d1ecdcda4060b129bfff973a0ac3be002ec23729",
+			"revisionTime": "2016-02-26T16:00:53-08:00"
+		},
+		{
+			"path": "github.com/opsee/basic/schema/aws/elb",
+			"revision": "d1ecdcda4060b129bfff973a0ac3be002ec23729",
+			"revisionTime": "2016-02-26T16:00:53-08:00"
+		},
+		{
+			"path": "github.com/opsee/basic/schema/aws/rds",
+			"revision": "d1ecdcda4060b129bfff973a0ac3be002ec23729",
+			"revisionTime": "2016-02-26T16:00:53-08:00"
+		},
+		{
+			"path": "github.com/opsee/basic/service",
+			"revision": "d1ecdcda4060b129bfff973a0ac3be002ec23729",
+			"revisionTime": "2016-02-26T16:00:53-08:00"
+		}
+	]
+}

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+import "github.com/opsee/protobuf/opseeproto/opsee.proto";
+import "github.com/opsee/protobuf/opseeproto/types/timestamp.proto";
+import "github.com/opsee/basic/schema/bastion.proto";
+
+package opsee;
+
+option go_package = "service";
+option (opseeproto.graphql) = true;
+
+message ListBastionsRequest {
+	repeated string customer_ids = 1;
+}
+
+message ListBastionsResponse {
+	repeated Bastion bastions = 1;
+}
+
+service Keelhaul {
+	rpc ListBastions(ListBastionsRequest) returns (ListBastionsResponse) {}
+}
