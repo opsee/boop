@@ -32,6 +32,13 @@ message ListUsersResponse {
 	int32 total = 4;
 }
 
+message ListCustomersResponse {
+	repeated Customer customers = 1;
+	int32 page = 2;
+	int32 per_page = 3;
+	int32 total = 4;
+}
+
 service Vape {
 	rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
 	rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {}

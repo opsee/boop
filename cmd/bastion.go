@@ -1,38 +1,35 @@
-// Copyright © 2016 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package cmd
 
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/fatih/color"
+	log "github.com/mborsuk/jwalterweatherman"
 	"github.com/opsee/basic/service"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"regexp"
+	"time"
 )
 
+const uuidFormat = `^[a-z0-9]{8}-[a-z0-9]{4}-[1-5][a-z0-9]{3}-[a-z0-9]{4}-[a-z0-9]{12}$`
+const emailFormat = `^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`
+
+const tcpTimeout = time.Duration(1) * time.Second
+
 type bastionServices struct {
-	Vape  service.VapeClient
-	Spanx service.SpanxClient
+	Vape     service.VapeClient
+	Spanx    service.SpanxClient
+	Keelhaul service.KeelhaulClient
 }
 
-func NewBastionServices(vape service.VapeClient, spanx service.SpanxClient) *bastionServices {
+func NewBastionServices(vape service.VapeClient, spanx service.SpanxClient, keelhaul service.KeelhaulClient) *bastionServices {
 	return &bastionServices{
-		Vape:  vape,
-		Spanx: spanx,
+		Vape:     vape,
+		Spanx:    spanx,
+		Keelhaul: keelhaul,
 	}
 }
 
@@ -40,32 +37,88 @@ var svcs *bastionServices
 
 // bastionCmd represents the bastion command
 var bastionCmd = &cobra.Command{
-	Use:   "bastion",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use: "bastion",
+}
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		vresp, err := svcs.Vape.ListUsers(context.Background(), &service.ListUsersRequest{})
+var bastionListCmd = &cobra.Command{
+	Use: "list",
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+		if len(args) < 1 {
+			return NewUserError("missing argument")
+		}
+
+		email, uuid, err := parseUserID(args[0])
 		if err != nil {
-			panic(err)
+			return err
 		}
-		for _, u := range vresp.Users {
-			sresp, err := svcs.Spanx.GetCredentials(context.Background(), &service.GetCredentialsRequest{User: u})
-			if err != nil {
-				fmt.Println("error: ", err)
-				continue
-			}
-			fmt.Println(sresp.Credentials)
+
+		userResp, err := svcs.Vape.GetUser(context.Background(), &service.GetUserRequest{
+			Email:      email,
+			CustomerId: uuid,
+		})
+		if err != nil {
+			return err
 		}
+		_ = userResp
+
+		keelResp, err := svcs.Keelhaul.ListBastionStates(context.Background(), &service.ListBastionStatesRequest{
+			CustomerIds: []string{userResp.User.CustomerId},
+		})
+		if err != nil {
+			return err
+		}
+		yellow := color.New(color.FgYellow).SprintFunc()
+		red := color.New(color.FgRed).SprintFunc()
+		blue := color.New(color.FgBlue).SprintFunc()
+		for _, b := range keelResp.BastionStates {
+			lastSeenDur := time.Since(time.Unix(b.LastSeen.Seconds, 0))
+			fmt.Printf("%s %s %s\n", yellow(b.Id), blue(b.Status), red(roundDuration(lastSeenDur, time.Second)))
+		}
+
+		return nil
 	},
 }
 
+func roundDuration(d, r time.Duration) time.Duration {
+	if r <= 0 {
+		return d
+	}
+	neg := d < 0
+	if neg {
+		d = -d
+	}
+	if m := d % r; m+m < r {
+		d = d - m
+	} else {
+		d = d + r - m
+	}
+	if neg {
+		return -d
+	}
+	return d
+}
+
+func parseUserID(id string) (email string, uuid string, err error) {
+	emailExp := regexp.MustCompile(emailFormat)
+	uuidExp := regexp.MustCompile(uuidFormat)
+
+	if emailExp.MatchString(id) {
+		return id, "", nil
+	}
+
+	if uuidExp.MatchString(id) {
+		return "", id, nil
+	}
+
+	return "", "", NewUserError("no email or UUID found in string")
+}
+
 func init() {
-	RootCmd.AddCommand(bastionCmd)
+	log.SetLogFlag(log.SFILE)
+
+	BoopCmd.AddCommand(bastionCmd)
+	bastionCmd.AddCommand(bastionListCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -77,18 +130,32 @@ func init() {
 	// is called directly, e.g.:
 	// bastionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	conn, err := grpc.Dial("vape.in.opsee.com:443", grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	// TODO get endpoints from yaml config w/Viper
+	conn, err := grpc.Dial("vape.in.opsee.com:443",
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
+		grpc.WithTimeout(tcpTimeout),
+		grpc.WithBlock())
 	if err != nil {
-		panic(err)
+		log.ERROR.Fatal(err)
 	}
 	vape := service.NewVapeClient(conn)
 
-	conn, err = grpc.Dial("spanx.in.opsee.com:8443", grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	conn, err = grpc.Dial("spanx.in.opsee.com:8443",
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
+		grpc.WithTimeout(tcpTimeout))
 	if err != nil {
 		panic(err)
 	}
 	spanx := service.NewSpanxClient(conn)
 
-	svcs = NewBastionServices(vape, spanx)
+	conn, err = grpc.Dial("keelhaul.in.opsee.com:443",
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
+		grpc.WithTimeout(tcpTimeout))
+	if err != nil {
+		panic(err)
+	}
+	keelhaul := service.NewKeelhaulClient(conn)
+
+	svcs = NewBastionServices(vape, spanx, keelhaul)
 
 }

@@ -18,8 +18,14 @@ It has these top-level messages:
 	ResultsResource
 	TestCheckRequest
 	TestCheckResponse
-	ListBastionsRequest
-	ListBastionsResponse
+	ListBastionStatesRequest
+	ListBastionStatesResponse
+	ScanVpcsRequest
+	ScanVpcsResponse
+	LaunchStackRequest
+	LaunchStackResponse
+	AuthenticateBastionRequest
+	AuthenticateBastionResponse
 	PutRoleRequest
 	PutRoleResponse
 	GetCredentialsRequest

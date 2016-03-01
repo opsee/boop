@@ -10,6 +10,9 @@ import math "math"
 import _ "github.com/opsee/protobuf/opseeproto"
 import _ "github.com/opsee/protobuf/opseeproto/types"
 import opsee1 "github.com/opsee/basic/schema"
+import opsee2 "github.com/opsee/basic/schema"
+import opsee3 "github.com/opsee/basic/schema"
+import _ "github.com/opsee/basic/schema/aws/ec2"
 
 import github_com_graphql_go_graphql "github.com/graphql-go/graphql"
 
@@ -23,34 +26,119 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-type ListBastionsRequest struct {
+type ListBastionStatesRequest struct {
 	CustomerIds []string `protobuf:"bytes,1,rep,name=customer_ids" json:"customer_ids,omitempty"`
 }
 
-func (m *ListBastionsRequest) Reset()         { *m = ListBastionsRequest{} }
-func (m *ListBastionsRequest) String() string { return proto.CompactTextString(m) }
-func (*ListBastionsRequest) ProtoMessage()    {}
+func (m *ListBastionStatesRequest) Reset()         { *m = ListBastionStatesRequest{} }
+func (m *ListBastionStatesRequest) String() string { return proto.CompactTextString(m) }
+func (*ListBastionStatesRequest) ProtoMessage()    {}
 
-type ListBastionsResponse struct {
-	Bastions []*opsee1.Bastion `protobuf:"bytes,1,rep,name=bastions" json:"bastions,omitempty"`
+type ListBastionStatesResponse struct {
+	BastionStates []*opsee1.BastionState `protobuf:"bytes,1,rep,name=bastion_states" json:"bastion_states,omitempty"`
 }
 
-func (m *ListBastionsResponse) Reset()         { *m = ListBastionsResponse{} }
-func (m *ListBastionsResponse) String() string { return proto.CompactTextString(m) }
-func (*ListBastionsResponse) ProtoMessage()    {}
+func (m *ListBastionStatesResponse) Reset()         { *m = ListBastionStatesResponse{} }
+func (m *ListBastionStatesResponse) String() string { return proto.CompactTextString(m) }
+func (*ListBastionStatesResponse) ProtoMessage()    {}
 
-func (m *ListBastionsResponse) GetBastions() []*opsee1.Bastion {
+func (m *ListBastionStatesResponse) GetBastionStates() []*opsee1.BastionState {
 	if m != nil {
-		return m.Bastions
+		return m.BastionStates
 	}
 	return nil
 }
 
-func init() {
-	proto.RegisterType((*ListBastionsRequest)(nil), "opsee.ListBastionsRequest")
-	proto.RegisterType((*ListBastionsResponse)(nil), "opsee.ListBastionsResponse")
+type ScanVpcsRequest struct {
+	User      *opsee2.User `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
+	AccessKey string       `protobuf:"bytes,2,opt,name=access_key,proto3" json:"access_key,omitempty"`
+	SecretKey string       `protobuf:"bytes,3,opt,name=secret_key,proto3" json:"secret_key,omitempty"`
+	Region    string       `protobuf:"bytes,4,opt,name=region,proto3" json:"region,omitempty"`
 }
-func (this *ListBastionsRequest) Equal(that interface{}) bool {
+
+func (m *ScanVpcsRequest) Reset()         { *m = ScanVpcsRequest{} }
+func (m *ScanVpcsRequest) String() string { return proto.CompactTextString(m) }
+func (*ScanVpcsRequest) ProtoMessage()    {}
+
+func (m *ScanVpcsRequest) GetUser() *opsee2.User {
+	if m != nil {
+		return m.User
+	}
+	return nil
+}
+
+type ScanVpcsResponse struct {
+	Region *opsee3.Region `protobuf:"bytes,1,opt,name=region" json:"region,omitempty"`
+}
+
+func (m *ScanVpcsResponse) Reset()         { *m = ScanVpcsResponse{} }
+func (m *ScanVpcsResponse) String() string { return proto.CompactTextString(m) }
+func (*ScanVpcsResponse) ProtoMessage()    {}
+
+func (m *ScanVpcsResponse) GetRegion() *opsee3.Region {
+	if m != nil {
+		return m.Region
+	}
+	return nil
+}
+
+type LaunchStackRequest struct {
+	User         *opsee2.User `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
+	AccessKey    string       `protobuf:"bytes,2,opt,name=access_key,proto3" json:"access_key,omitempty"`
+	SecretKey    string       `protobuf:"bytes,3,opt,name=secret_key,proto3" json:"secret_key,omitempty"`
+	Region       string       `protobuf:"bytes,4,opt,name=region,proto3" json:"region,omitempty"`
+	VpcId        string       `protobuf:"bytes,5,opt,name=vpc_id,proto3" json:"vpc_id,omitempty"`
+	SubnetId     string       `protobuf:"bytes,6,opt,name=subnet_id,proto3" json:"subnet_id,omitempty"`
+	InstanceSize string       `protobuf:"bytes,7,opt,name=instance_size,proto3" json:"instance_size,omitempty"`
+}
+
+func (m *LaunchStackRequest) Reset()         { *m = LaunchStackRequest{} }
+func (m *LaunchStackRequest) String() string { return proto.CompactTextString(m) }
+func (*LaunchStackRequest) ProtoMessage()    {}
+
+func (m *LaunchStackRequest) GetUser() *opsee2.User {
+	if m != nil {
+		return m.User
+	}
+	return nil
+}
+
+type LaunchStackResponse struct {
+	StackId string `protobuf:"bytes,1,opt,name=stack_id,proto3" json:"stack_id,omitempty"`
+}
+
+func (m *LaunchStackResponse) Reset()         { *m = LaunchStackResponse{} }
+func (m *LaunchStackResponse) String() string { return proto.CompactTextString(m) }
+func (*LaunchStackResponse) ProtoMessage()    {}
+
+type AuthenticateBastionRequest struct {
+	Id       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+}
+
+func (m *AuthenticateBastionRequest) Reset()         { *m = AuthenticateBastionRequest{} }
+func (m *AuthenticateBastionRequest) String() string { return proto.CompactTextString(m) }
+func (*AuthenticateBastionRequest) ProtoMessage()    {}
+
+type AuthenticateBastionResponse struct {
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+}
+
+func (m *AuthenticateBastionResponse) Reset()         { *m = AuthenticateBastionResponse{} }
+func (m *AuthenticateBastionResponse) String() string { return proto.CompactTextString(m) }
+func (*AuthenticateBastionResponse) ProtoMessage()    {}
+
+func init() {
+	proto.RegisterType((*ListBastionStatesRequest)(nil), "opsee.ListBastionStatesRequest")
+	proto.RegisterType((*ListBastionStatesResponse)(nil), "opsee.ListBastionStatesResponse")
+	proto.RegisterType((*ScanVpcsRequest)(nil), "opsee.ScanVpcsRequest")
+	proto.RegisterType((*ScanVpcsResponse)(nil), "opsee.ScanVpcsResponse")
+	proto.RegisterType((*LaunchStackRequest)(nil), "opsee.LaunchStackRequest")
+	proto.RegisterType((*LaunchStackResponse)(nil), "opsee.LaunchStackResponse")
+	proto.RegisterType((*AuthenticateBastionRequest)(nil), "opsee.AuthenticateBastionRequest")
+	proto.RegisterType((*AuthenticateBastionResponse)(nil), "opsee.AuthenticateBastionResponse")
+}
+func (this *ListBastionStatesRequest) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -58,9 +146,9 @@ func (this *ListBastionsRequest) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*ListBastionsRequest)
+	that1, ok := that.(*ListBastionStatesRequest)
 	if !ok {
-		that2, ok := that.(ListBastionsRequest)
+		that2, ok := that.(ListBastionStatesRequest)
 		if ok {
 			that1 = &that2
 		} else {
@@ -85,7 +173,7 @@ func (this *ListBastionsRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ListBastionsResponse) Equal(that interface{}) bool {
+func (this *ListBastionStatesResponse) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -93,9 +181,9 @@ func (this *ListBastionsResponse) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*ListBastionsResponse)
+	that1, ok := that.(*ListBastionStatesResponse)
 	if !ok {
-		that2, ok := that.(ListBastionsResponse)
+		that2, ok := that.(ListBastionStatesResponse)
 		if ok {
 			that1 = &that2
 		} else {
@@ -110,32 +198,278 @@ func (this *ListBastionsResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if len(this.Bastions) != len(that1.Bastions) {
+	if len(this.BastionStates) != len(that1.BastionStates) {
 		return false
 	}
-	for i := range this.Bastions {
-		if !this.Bastions[i].Equal(that1.Bastions[i]) {
+	for i := range this.BastionStates {
+		if !this.BastionStates[i].Equal(that1.BastionStates[i]) {
 			return false
 		}
 	}
 	return true
 }
+func (this *ScanVpcsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
 
-type ListBastionsRequestGetter interface {
-	GetListBastionsRequest() *ListBastionsRequest
+	that1, ok := that.(*ScanVpcsRequest)
+	if !ok {
+		that2, ok := that.(ScanVpcsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.User.Equal(that1.User) {
+		return false
+	}
+	if this.AccessKey != that1.AccessKey {
+		return false
+	}
+	if this.SecretKey != that1.SecretKey {
+		return false
+	}
+	if this.Region != that1.Region {
+		return false
+	}
+	return true
+}
+func (this *ScanVpcsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ScanVpcsResponse)
+	if !ok {
+		that2, ok := that.(ScanVpcsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Region.Equal(that1.Region) {
+		return false
+	}
+	return true
+}
+func (this *LaunchStackRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LaunchStackRequest)
+	if !ok {
+		that2, ok := that.(LaunchStackRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.User.Equal(that1.User) {
+		return false
+	}
+	if this.AccessKey != that1.AccessKey {
+		return false
+	}
+	if this.SecretKey != that1.SecretKey {
+		return false
+	}
+	if this.Region != that1.Region {
+		return false
+	}
+	if this.VpcId != that1.VpcId {
+		return false
+	}
+	if this.SubnetId != that1.SubnetId {
+		return false
+	}
+	if this.InstanceSize != that1.InstanceSize {
+		return false
+	}
+	return true
+}
+func (this *LaunchStackResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LaunchStackResponse)
+	if !ok {
+		that2, ok := that.(LaunchStackResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.StackId != that1.StackId {
+		return false
+	}
+	return true
+}
+func (this *AuthenticateBastionRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AuthenticateBastionRequest)
+	if !ok {
+		that2, ok := that.(AuthenticateBastionRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Id != that1.Id {
+		return false
+	}
+	if this.Password != that1.Password {
+		return false
+	}
+	return true
+}
+func (this *AuthenticateBastionResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AuthenticateBastionResponse)
+	if !ok {
+		that2, ok := that.(AuthenticateBastionResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Success != that1.Success {
+		return false
+	}
+	return true
 }
 
-var GraphQLListBastionsRequestType *github_com_graphql_go_graphql.Object
-
-type ListBastionsResponseGetter interface {
-	GetListBastionsResponse() *ListBastionsResponse
+type ListBastionStatesRequestGetter interface {
+	GetListBastionStatesRequest() *ListBastionStatesRequest
 }
 
-var GraphQLListBastionsResponseType *github_com_graphql_go_graphql.Object
+var GraphQLListBastionStatesRequestType *github_com_graphql_go_graphql.Object
+
+type ListBastionStatesResponseGetter interface {
+	GetListBastionStatesResponse() *ListBastionStatesResponse
+}
+
+var GraphQLListBastionStatesResponseType *github_com_graphql_go_graphql.Object
+
+type ScanVpcsRequestGetter interface {
+	GetScanVpcsRequest() *ScanVpcsRequest
+}
+
+var GraphQLScanVpcsRequestType *github_com_graphql_go_graphql.Object
+
+type ScanVpcsResponseGetter interface {
+	GetScanVpcsResponse() *ScanVpcsResponse
+}
+
+var GraphQLScanVpcsResponseType *github_com_graphql_go_graphql.Object
+
+type LaunchStackRequestGetter interface {
+	GetLaunchStackRequest() *LaunchStackRequest
+}
+
+var GraphQLLaunchStackRequestType *github_com_graphql_go_graphql.Object
+
+type LaunchStackResponseGetter interface {
+	GetLaunchStackResponse() *LaunchStackResponse
+}
+
+var GraphQLLaunchStackResponseType *github_com_graphql_go_graphql.Object
+
+type AuthenticateBastionRequestGetter interface {
+	GetAuthenticateBastionRequest() *AuthenticateBastionRequest
+}
+
+var GraphQLAuthenticateBastionRequestType *github_com_graphql_go_graphql.Object
+
+type AuthenticateBastionResponseGetter interface {
+	GetAuthenticateBastionResponse() *AuthenticateBastionResponse
+}
+
+var GraphQLAuthenticateBastionResponseType *github_com_graphql_go_graphql.Object
 
 func init() {
-	GraphQLListBastionsRequestType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
-		Name:        "serviceListBastionsRequest",
+	GraphQLListBastionStatesRequestType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceListBastionStatesRequest",
 		Description: "",
 		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
 			return github_com_graphql_go_graphql.Fields{
@@ -143,13 +477,13 @@ func init() {
 					Type:        github_com_graphql_go_graphql.NewList(github_com_graphql_go_graphql.String),
 					Description: "",
 					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
-						obj, ok := p.Source.(*ListBastionsRequest)
+						obj, ok := p.Source.(*ListBastionStatesRequest)
 						if ok {
 							return obj.CustomerIds, nil
 						}
-						inter, ok := p.Source.(ListBastionsRequestGetter)
+						inter, ok := p.Source.(ListBastionStatesRequestGetter)
 						if ok {
-							face := inter.GetListBastionsRequest()
+							face := inter.GetListBastionStatesRequest()
 							if face == nil {
 								return nil, nil
 							}
@@ -161,28 +495,398 @@ func init() {
 			}
 		}),
 	})
-	GraphQLListBastionsResponseType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
-		Name:        "serviceListBastionsResponse",
+	GraphQLListBastionStatesResponseType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceListBastionStatesResponse",
 		Description: "",
 		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
 			return github_com_graphql_go_graphql.Fields{
-				"bastions": &github_com_graphql_go_graphql.Field{
-					Type:        github_com_graphql_go_graphql.NewList(opsee1.GraphQLBastionType),
+				"bastion_states": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.NewList(opsee1.GraphQLBastionStateType),
 					Description: "",
 					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
-						obj, ok := p.Source.(*ListBastionsResponse)
+						obj, ok := p.Source.(*ListBastionStatesResponse)
 						if ok {
-							return obj.Bastions, nil
+							return obj.BastionStates, nil
 						}
-						inter, ok := p.Source.(ListBastionsResponseGetter)
+						inter, ok := p.Source.(ListBastionStatesResponseGetter)
 						if ok {
-							face := inter.GetListBastionsResponse()
+							face := inter.GetListBastionStatesResponse()
 							if face == nil {
 								return nil, nil
 							}
-							return face.Bastions, nil
+							return face.BastionStates, nil
 						}
-						return nil, fmt.Errorf("field bastions not resolved")
+						return nil, fmt.Errorf("field bastion_states not resolved")
+					},
+				},
+			}
+		}),
+	})
+	GraphQLScanVpcsRequestType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceScanVpcsRequest",
+		Description: "",
+		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
+			return github_com_graphql_go_graphql.Fields{
+				"user": &github_com_graphql_go_graphql.Field{
+					Type:        opsee2.GraphQLUserType,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ScanVpcsRequest)
+						if ok {
+							if obj.User == nil {
+								return nil, nil
+							}
+							return obj.GetUser(), nil
+						}
+						inter, ok := p.Source.(ScanVpcsRequestGetter)
+						if ok {
+							face := inter.GetScanVpcsRequest()
+							if face == nil {
+								return nil, nil
+							}
+							if face.User == nil {
+								return nil, nil
+							}
+							return face.GetUser(), nil
+						}
+						return nil, fmt.Errorf("field user not resolved")
+					},
+				},
+				"access_key": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ScanVpcsRequest)
+						if ok {
+							return obj.AccessKey, nil
+						}
+						inter, ok := p.Source.(ScanVpcsRequestGetter)
+						if ok {
+							face := inter.GetScanVpcsRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.AccessKey, nil
+						}
+						return nil, fmt.Errorf("field access_key not resolved")
+					},
+				},
+				"secret_key": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ScanVpcsRequest)
+						if ok {
+							return obj.SecretKey, nil
+						}
+						inter, ok := p.Source.(ScanVpcsRequestGetter)
+						if ok {
+							face := inter.GetScanVpcsRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.SecretKey, nil
+						}
+						return nil, fmt.Errorf("field secret_key not resolved")
+					},
+				},
+				"region": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ScanVpcsRequest)
+						if ok {
+							return obj.Region, nil
+						}
+						inter, ok := p.Source.(ScanVpcsRequestGetter)
+						if ok {
+							face := inter.GetScanVpcsRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Region, nil
+						}
+						return nil, fmt.Errorf("field region not resolved")
+					},
+				},
+			}
+		}),
+	})
+	GraphQLScanVpcsResponseType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceScanVpcsResponse",
+		Description: "",
+		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
+			return github_com_graphql_go_graphql.Fields{
+				"region": &github_com_graphql_go_graphql.Field{
+					Type:        opsee3.GraphQLRegionType,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ScanVpcsResponse)
+						if ok {
+							if obj.Region == nil {
+								return nil, nil
+							}
+							return obj.GetRegion(), nil
+						}
+						inter, ok := p.Source.(ScanVpcsResponseGetter)
+						if ok {
+							face := inter.GetScanVpcsResponse()
+							if face == nil {
+								return nil, nil
+							}
+							if face.Region == nil {
+								return nil, nil
+							}
+							return face.GetRegion(), nil
+						}
+						return nil, fmt.Errorf("field region not resolved")
+					},
+				},
+			}
+		}),
+	})
+	GraphQLLaunchStackRequestType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceLaunchStackRequest",
+		Description: "",
+		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
+			return github_com_graphql_go_graphql.Fields{
+				"user": &github_com_graphql_go_graphql.Field{
+					Type:        opsee2.GraphQLUserType,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*LaunchStackRequest)
+						if ok {
+							if obj.User == nil {
+								return nil, nil
+							}
+							return obj.GetUser(), nil
+						}
+						inter, ok := p.Source.(LaunchStackRequestGetter)
+						if ok {
+							face := inter.GetLaunchStackRequest()
+							if face == nil {
+								return nil, nil
+							}
+							if face.User == nil {
+								return nil, nil
+							}
+							return face.GetUser(), nil
+						}
+						return nil, fmt.Errorf("field user not resolved")
+					},
+				},
+				"access_key": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*LaunchStackRequest)
+						if ok {
+							return obj.AccessKey, nil
+						}
+						inter, ok := p.Source.(LaunchStackRequestGetter)
+						if ok {
+							face := inter.GetLaunchStackRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.AccessKey, nil
+						}
+						return nil, fmt.Errorf("field access_key not resolved")
+					},
+				},
+				"secret_key": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*LaunchStackRequest)
+						if ok {
+							return obj.SecretKey, nil
+						}
+						inter, ok := p.Source.(LaunchStackRequestGetter)
+						if ok {
+							face := inter.GetLaunchStackRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.SecretKey, nil
+						}
+						return nil, fmt.Errorf("field secret_key not resolved")
+					},
+				},
+				"region": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*LaunchStackRequest)
+						if ok {
+							return obj.Region, nil
+						}
+						inter, ok := p.Source.(LaunchStackRequestGetter)
+						if ok {
+							face := inter.GetLaunchStackRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Region, nil
+						}
+						return nil, fmt.Errorf("field region not resolved")
+					},
+				},
+				"vpc_id": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*LaunchStackRequest)
+						if ok {
+							return obj.VpcId, nil
+						}
+						inter, ok := p.Source.(LaunchStackRequestGetter)
+						if ok {
+							face := inter.GetLaunchStackRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.VpcId, nil
+						}
+						return nil, fmt.Errorf("field vpc_id not resolved")
+					},
+				},
+				"subnet_id": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*LaunchStackRequest)
+						if ok {
+							return obj.SubnetId, nil
+						}
+						inter, ok := p.Source.(LaunchStackRequestGetter)
+						if ok {
+							face := inter.GetLaunchStackRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.SubnetId, nil
+						}
+						return nil, fmt.Errorf("field subnet_id not resolved")
+					},
+				},
+				"instance_size": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*LaunchStackRequest)
+						if ok {
+							return obj.InstanceSize, nil
+						}
+						inter, ok := p.Source.(LaunchStackRequestGetter)
+						if ok {
+							face := inter.GetLaunchStackRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.InstanceSize, nil
+						}
+						return nil, fmt.Errorf("field instance_size not resolved")
+					},
+				},
+			}
+		}),
+	})
+	GraphQLLaunchStackResponseType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceLaunchStackResponse",
+		Description: "",
+		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
+			return github_com_graphql_go_graphql.Fields{
+				"stack_id": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*LaunchStackResponse)
+						if ok {
+							return obj.StackId, nil
+						}
+						inter, ok := p.Source.(LaunchStackResponseGetter)
+						if ok {
+							face := inter.GetLaunchStackResponse()
+							if face == nil {
+								return nil, nil
+							}
+							return face.StackId, nil
+						}
+						return nil, fmt.Errorf("field stack_id not resolved")
+					},
+				},
+			}
+		}),
+	})
+	GraphQLAuthenticateBastionRequestType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceAuthenticateBastionRequest",
+		Description: "",
+		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
+			return github_com_graphql_go_graphql.Fields{
+				"id": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*AuthenticateBastionRequest)
+						if ok {
+							return obj.Id, nil
+						}
+						inter, ok := p.Source.(AuthenticateBastionRequestGetter)
+						if ok {
+							face := inter.GetAuthenticateBastionRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Id, nil
+						}
+						return nil, fmt.Errorf("field id not resolved")
+					},
+				},
+				"password": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*AuthenticateBastionRequest)
+						if ok {
+							return obj.Password, nil
+						}
+						inter, ok := p.Source.(AuthenticateBastionRequestGetter)
+						if ok {
+							face := inter.GetAuthenticateBastionRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Password, nil
+						}
+						return nil, fmt.Errorf("field password not resolved")
+					},
+				},
+			}
+		}),
+	})
+	GraphQLAuthenticateBastionResponseType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceAuthenticateBastionResponse",
+		Description: "",
+		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
+			return github_com_graphql_go_graphql.Fields{
+				"success": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.Boolean,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*AuthenticateBastionResponse)
+						if ok {
+							return obj.Success, nil
+						}
+						inter, ok := p.Source.(AuthenticateBastionResponseGetter)
+						if ok {
+							face := inter.GetAuthenticateBastionResponse()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Success, nil
+						}
+						return nil, fmt.Errorf("field success not resolved")
 					},
 				},
 			}
@@ -197,7 +901,10 @@ var _ grpc.ClientConn
 // Client API for Keelhaul service
 
 type KeelhaulClient interface {
-	ListBastions(ctx context.Context, in *ListBastionsRequest, opts ...grpc.CallOption) (*ListBastionsResponse, error)
+	ListBastionStates(ctx context.Context, in *ListBastionStatesRequest, opts ...grpc.CallOption) (*ListBastionStatesResponse, error)
+	ScanVpcs(ctx context.Context, in *ScanVpcsRequest, opts ...grpc.CallOption) (*ScanVpcsResponse, error)
+	LaunchStack(ctx context.Context, in *LaunchStackRequest, opts ...grpc.CallOption) (*LaunchStackResponse, error)
+	AuthenticateBastion(ctx context.Context, in *AuthenticateBastionRequest, opts ...grpc.CallOption) (*AuthenticateBastionResponse, error)
 }
 
 type keelhaulClient struct {
@@ -208,9 +915,36 @@ func NewKeelhaulClient(cc *grpc.ClientConn) KeelhaulClient {
 	return &keelhaulClient{cc}
 }
 
-func (c *keelhaulClient) ListBastions(ctx context.Context, in *ListBastionsRequest, opts ...grpc.CallOption) (*ListBastionsResponse, error) {
-	out := new(ListBastionsResponse)
-	err := grpc.Invoke(ctx, "/opsee.Keelhaul/ListBastions", in, out, c.cc, opts...)
+func (c *keelhaulClient) ListBastionStates(ctx context.Context, in *ListBastionStatesRequest, opts ...grpc.CallOption) (*ListBastionStatesResponse, error) {
+	out := new(ListBastionStatesResponse)
+	err := grpc.Invoke(ctx, "/opsee.Keelhaul/ListBastionStates", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *keelhaulClient) ScanVpcs(ctx context.Context, in *ScanVpcsRequest, opts ...grpc.CallOption) (*ScanVpcsResponse, error) {
+	out := new(ScanVpcsResponse)
+	err := grpc.Invoke(ctx, "/opsee.Keelhaul/ScanVpcs", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *keelhaulClient) LaunchStack(ctx context.Context, in *LaunchStackRequest, opts ...grpc.CallOption) (*LaunchStackResponse, error) {
+	out := new(LaunchStackResponse)
+	err := grpc.Invoke(ctx, "/opsee.Keelhaul/LaunchStack", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *keelhaulClient) AuthenticateBastion(ctx context.Context, in *AuthenticateBastionRequest, opts ...grpc.CallOption) (*AuthenticateBastionResponse, error) {
+	out := new(AuthenticateBastionResponse)
+	err := grpc.Invoke(ctx, "/opsee.Keelhaul/AuthenticateBastion", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -220,19 +954,58 @@ func (c *keelhaulClient) ListBastions(ctx context.Context, in *ListBastionsReque
 // Server API for Keelhaul service
 
 type KeelhaulServer interface {
-	ListBastions(context.Context, *ListBastionsRequest) (*ListBastionsResponse, error)
+	ListBastionStates(context.Context, *ListBastionStatesRequest) (*ListBastionStatesResponse, error)
+	ScanVpcs(context.Context, *ScanVpcsRequest) (*ScanVpcsResponse, error)
+	LaunchStack(context.Context, *LaunchStackRequest) (*LaunchStackResponse, error)
+	AuthenticateBastion(context.Context, *AuthenticateBastionRequest) (*AuthenticateBastionResponse, error)
 }
 
 func RegisterKeelhaulServer(s *grpc.Server, srv KeelhaulServer) {
 	s.RegisterService(&_Keelhaul_serviceDesc, srv)
 }
 
-func _Keelhaul_ListBastions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(ListBastionsRequest)
+func _Keelhaul_ListBastionStates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(ListBastionStatesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(KeelhaulServer).ListBastions(ctx, in)
+	out, err := srv.(KeelhaulServer).ListBastionStates(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Keelhaul_ScanVpcs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(ScanVpcsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(KeelhaulServer).ScanVpcs(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Keelhaul_LaunchStack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(LaunchStackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(KeelhaulServer).LaunchStack(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Keelhaul_AuthenticateBastion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(AuthenticateBastionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(KeelhaulServer).AuthenticateBastion(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -244,15 +1017,27 @@ var _Keelhaul_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*KeelhaulServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ListBastions",
-			Handler:    _Keelhaul_ListBastions_Handler,
+			MethodName: "ListBastionStates",
+			Handler:    _Keelhaul_ListBastionStates_Handler,
+		},
+		{
+			MethodName: "ScanVpcs",
+			Handler:    _Keelhaul_ScanVpcs_Handler,
+		},
+		{
+			MethodName: "LaunchStack",
+			Handler:    _Keelhaul_LaunchStack_Handler,
+		},
+		{
+			MethodName: "AuthenticateBastion",
+			Handler:    _Keelhaul_AuthenticateBastion_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
 }
 
-func NewPopulatedListBastionsRequest(r randyKeelhaul, easy bool) *ListBastionsRequest {
-	this := &ListBastionsRequest{}
+func NewPopulatedListBastionStatesRequest(r randyKeelhaul, easy bool) *ListBastionStatesRequest {
+	this := &ListBastionStatesRequest{}
 	v1 := r.Intn(10)
 	this.CustomerIds = make([]string, v1)
 	for i := 0; i < v1; i++ {
@@ -263,15 +1048,79 @@ func NewPopulatedListBastionsRequest(r randyKeelhaul, easy bool) *ListBastionsRe
 	return this
 }
 
-func NewPopulatedListBastionsResponse(r randyKeelhaul, easy bool) *ListBastionsResponse {
-	this := &ListBastionsResponse{}
+func NewPopulatedListBastionStatesResponse(r randyKeelhaul, easy bool) *ListBastionStatesResponse {
+	this := &ListBastionStatesResponse{}
 	if r.Intn(10) != 0 {
 		v2 := r.Intn(5)
-		this.Bastions = make([]*opsee1.Bastion, v2)
+		this.BastionStates = make([]*opsee1.BastionState, v2)
 		for i := 0; i < v2; i++ {
-			this.Bastions[i] = opsee1.NewPopulatedBastion(r, easy)
+			this.BastionStates[i] = opsee1.NewPopulatedBastionState(r, easy)
 		}
 	}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedScanVpcsRequest(r randyKeelhaul, easy bool) *ScanVpcsRequest {
+	this := &ScanVpcsRequest{}
+	if r.Intn(10) != 0 {
+		this.User = opsee2.NewPopulatedUser(r, easy)
+	}
+	this.AccessKey = randStringKeelhaul(r)
+	this.SecretKey = randStringKeelhaul(r)
+	this.Region = randStringKeelhaul(r)
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedScanVpcsResponse(r randyKeelhaul, easy bool) *ScanVpcsResponse {
+	this := &ScanVpcsResponse{}
+	if r.Intn(10) == 0 {
+		this.Region = opsee3.NewPopulatedRegion(r, easy)
+	}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedLaunchStackRequest(r randyKeelhaul, easy bool) *LaunchStackRequest {
+	this := &LaunchStackRequest{}
+	if r.Intn(10) != 0 {
+		this.User = opsee2.NewPopulatedUser(r, easy)
+	}
+	this.AccessKey = randStringKeelhaul(r)
+	this.SecretKey = randStringKeelhaul(r)
+	this.Region = randStringKeelhaul(r)
+	this.VpcId = randStringKeelhaul(r)
+	this.SubnetId = randStringKeelhaul(r)
+	this.InstanceSize = randStringKeelhaul(r)
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedLaunchStackResponse(r randyKeelhaul, easy bool) *LaunchStackResponse {
+	this := &LaunchStackResponse{}
+	this.StackId = randStringKeelhaul(r)
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedAuthenticateBastionRequest(r randyKeelhaul, easy bool) *AuthenticateBastionRequest {
+	this := &AuthenticateBastionRequest{}
+	this.Id = randStringKeelhaul(r)
+	this.Password = randStringKeelhaul(r)
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedAuthenticateBastionResponse(r randyKeelhaul, easy bool) *AuthenticateBastionResponse {
+	this := &AuthenticateBastionResponse{}
+	this.Success = bool(bool(r.Intn(2) == 0))
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this

@@ -76,11 +76,30 @@ func (m *ListUsersResponse) GetUsers() []*opsee2.User {
 	return nil
 }
 
+type ListCustomersResponse struct {
+	Customers []*opsee2.Customer `protobuf:"bytes,1,rep,name=customers" json:"customers,omitempty"`
+	Page      int32              `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PerPage   int32              `protobuf:"varint,3,opt,name=per_page,proto3" json:"per_page,omitempty"`
+	Total     int32              `protobuf:"varint,4,opt,name=total,proto3" json:"total,omitempty"`
+}
+
+func (m *ListCustomersResponse) Reset()         { *m = ListCustomersResponse{} }
+func (m *ListCustomersResponse) String() string { return proto.CompactTextString(m) }
+func (*ListCustomersResponse) ProtoMessage()    {}
+
+func (m *ListCustomersResponse) GetCustomers() []*opsee2.Customer {
+	if m != nil {
+		return m.Customers
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*GetUserRequest)(nil), "opsee.GetUserRequest")
 	proto.RegisterType((*GetUserResponse)(nil), "opsee.GetUserResponse")
 	proto.RegisterType((*ListUsersRequest)(nil), "opsee.ListUsersRequest")
 	proto.RegisterType((*ListUsersResponse)(nil), "opsee.ListUsersResponse")
+	proto.RegisterType((*ListCustomersResponse)(nil), "opsee.ListCustomersResponse")
 }
 func (this *GetUserRequest) Equal(that interface{}) bool {
 	if that == nil {
@@ -228,6 +247,50 @@ func (this *ListUsersResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *ListCustomersResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ListCustomersResponse)
+	if !ok {
+		that2, ok := that.(ListCustomersResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.Customers) != len(that1.Customers) {
+		return false
+	}
+	for i := range this.Customers {
+		if !this.Customers[i].Equal(that1.Customers[i]) {
+			return false
+		}
+	}
+	if this.Page != that1.Page {
+		return false
+	}
+	if this.PerPage != that1.PerPage {
+		return false
+	}
+	if this.Total != that1.Total {
+		return false
+	}
+	return true
+}
 
 type GetUserRequestGetter interface {
 	GetGetUserRequest() *GetUserRequest
@@ -252,6 +315,12 @@ type ListUsersResponseGetter interface {
 }
 
 var GraphQLListUsersResponseType *github_com_graphql_go_graphql.Object
+
+type ListCustomersResponseGetter interface {
+	GetListCustomersResponse() *ListCustomersResponse
+}
+
+var GraphQLListCustomersResponseType *github_com_graphql_go_graphql.Object
 
 func init() {
 	GraphQLGetUserRequestType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
@@ -501,6 +570,90 @@ func init() {
 			}
 		}),
 	})
+	GraphQLListCustomersResponseType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceListCustomersResponse",
+		Description: "",
+		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
+			return github_com_graphql_go_graphql.Fields{
+				"customers": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.NewList(opsee2.GraphQLCustomerType),
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ListCustomersResponse)
+						if ok {
+							return obj.Customers, nil
+						}
+						inter, ok := p.Source.(ListCustomersResponseGetter)
+						if ok {
+							face := inter.GetListCustomersResponse()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Customers, nil
+						}
+						return nil, fmt.Errorf("field customers not resolved")
+					},
+				},
+				"page": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.Int,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ListCustomersResponse)
+						if ok {
+							return obj.Page, nil
+						}
+						inter, ok := p.Source.(ListCustomersResponseGetter)
+						if ok {
+							face := inter.GetListCustomersResponse()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Page, nil
+						}
+						return nil, fmt.Errorf("field page not resolved")
+					},
+				},
+				"per_page": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.Int,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ListCustomersResponse)
+						if ok {
+							return obj.PerPage, nil
+						}
+						inter, ok := p.Source.(ListCustomersResponseGetter)
+						if ok {
+							face := inter.GetListCustomersResponse()
+							if face == nil {
+								return nil, nil
+							}
+							return face.PerPage, nil
+						}
+						return nil, fmt.Errorf("field per_page not resolved")
+					},
+				},
+				"total": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.Int,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ListCustomersResponse)
+						if ok {
+							return obj.Total, nil
+						}
+						inter, ok := p.Source.(ListCustomersResponseGetter)
+						if ok {
+							face := inter.GetListCustomersResponse()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Total, nil
+						}
+						return nil, fmt.Errorf("field total not resolved")
+					},
+				},
+			}
+		}),
+	})
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -656,6 +809,32 @@ func NewPopulatedListUsersResponse(r randyVape, easy bool) *ListUsersResponse {
 	return this
 }
 
+func NewPopulatedListCustomersResponse(r randyVape, easy bool) *ListCustomersResponse {
+	this := &ListCustomersResponse{}
+	if r.Intn(10) != 0 {
+		v2 := r.Intn(5)
+		this.Customers = make([]*opsee2.Customer, v2)
+		for i := 0; i < v2; i++ {
+			this.Customers[i] = opsee2.NewPopulatedCustomer(r, easy)
+		}
+	}
+	this.Page = int32(r.Int31())
+	if r.Intn(2) == 0 {
+		this.Page *= -1
+	}
+	this.PerPage = int32(r.Int31())
+	if r.Intn(2) == 0 {
+		this.PerPage *= -1
+	}
+	this.Total = int32(r.Int31())
+	if r.Intn(2) == 0 {
+		this.Total *= -1
+	}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
 type randyVape interface {
 	Float32() float32
 	Float64() float64
@@ -675,9 +854,9 @@ func randUTF8RuneVape(r randyVape) rune {
 	return rune(ru + 61)
 }
 func randStringVape(r randyVape) string {
-	v2 := r.Intn(100)
-	tmps := make([]rune, v2)
-	for i := 0; i < v2; i++ {
+	v3 := r.Intn(100)
+	tmps := make([]rune, v3)
+	for i := 0; i < v3; i++ {
 		tmps[i] = randUTF8RuneVape(r)
 	}
 	return string(tmps)
@@ -699,11 +878,11 @@ func randFieldVape(data []byte, r randyVape, fieldNumber int, wire int) []byte {
 	switch wire {
 	case 0:
 		data = encodeVarintPopulateVape(data, uint64(key))
-		v3 := r.Int63()
+		v4 := r.Int63()
 		if r.Intn(2) == 0 {
-			v3 *= -1
+			v4 *= -1
 		}
-		data = encodeVarintPopulateVape(data, uint64(v3))
+		data = encodeVarintPopulateVape(data, uint64(v4))
 	case 1:
 		data = encodeVarintPopulateVape(data, uint64(key))
 		data = append(data, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))

@@ -17,13 +17,59 @@ option java_outer_classname = "AWSDataProto";
 option go_package = "schema";
 option (opseeproto.graphql) = true;
 
+// An Opsee region object representing an AWS region.
+message Region {
+
+	// The region identifier, e.g. us-west-1.
+  string region = 1;
+	string customer_id = 2;
+
+	// The region's supported platforms [EC2-VPC, Classic].
+	repeated string supported_platforms = 3;
+
+	// The region's VPCs.
+	repeated Vpc vpcs = 4;
+
+	// The region's subnets.
+	repeated Subnet subnets = 5;
+}
+
+// An Opsee VPC object representing an AWS VPC resource.
+message Vpc {
+  
+	// The VPC identifier.
+	string id = 1;
+	string customer_id = 2;
+	
+	// The raw AWS VPC data.
+	aws.ec2.Vpc resource = 3;
+	
+  // The last seen number of instances in the VPC. This value is cached, so it may not be consistent.
+  int32 instance_count = 4;
+}
+
+// An Opsee subnet object representing an AWS Subnet resource.
+message Subnet {
+
+  // The subnet identifier.
+	string id = 1;
+	string customer_id = 2;
+	
+	// The raw AWS subnet data.
+	aws.ec2.Subnet resource = 3;
+	
+  // The last seen number of instances in the Subnet. This value is cached, so it may not be consistent.
+  int32 instance_count = 4;
+	
+	// The type of route to the internet, may be one of [public, nat, gateway, private, occluded].
+	string routing = 5;
+}
 
 // An Opsee group target representing an AWS group resource.
 message Group {
 
   // The AWS group identifier.
   string id = 1;
-
   string customer_id = 2;
   
   // The type of AWS resource.
@@ -58,7 +104,6 @@ message Instance {
 
   // The AWS instance identifier.
   string id = 1;
-
   string customer_id = 2;
   
   // The type of AWS resource.
