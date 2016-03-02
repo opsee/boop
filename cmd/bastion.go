@@ -191,13 +191,130 @@ var bastionRestartCmd = &cobra.Command{
 		if bastionInstance != nil {
 			log.INFO.Printf("found bastion instance: %s in %s\n", *bastionInstance.InstanceId, bastionRegion)
 			// REBOOT THIS MOTHER
-			rebootResponse, err := ec2client.RebootInstances(&ec2.RebootInstancesInput{
+			_, err := ec2client.RebootInstances(&ec2.RebootInstancesInput{
 				InstanceIds: []*string{bastionInstance.InstanceId},
 			})
 			if err != nil {
 				return err
 			}
 			fmt.Printf("instance restart requested for: %s in %s\n", *bastionInstance.InstanceId, bastionRegion)
+		}
+		return nil
+	},
+}
+
+// TODO de-duplicate this code w/term
+var bastionTermCmd = &cobra.Command{
+	Use:   "terminate [customer email|customer UUID] [bastion UUID]",
+	Short: "terminate a customer bastion",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 2 {
+			return NewUserError("missing argument")
+		}
+
+		email, uuid, err := parseUserID(args[0])
+		if err != nil {
+			return err
+		}
+
+		uuidExp := regexp.MustCompile(uuidFormat)
+		if !uuidExp.MatchString(args[1]) {
+			return NewUserErrorF("invalid bastion ID: %s", args[1])
+		}
+		bastionID := args[1]
+
+		if viper.GetBool("verbose") {
+			log.SetStdoutThreshold(log.LevelInfo)
+		}
+
+		initServices()
+
+		userResp, err := svcs.Vape.GetUser(context.Background(), &service.GetUserRequest{
+			Email:      email,
+			CustomerId: uuid,
+		})
+		if err != nil {
+			return err
+		}
+
+		bastionStates, err := getBastions(userResp.User.CustomerId)
+		if err != nil {
+			return err
+		}
+
+		var userCreds *opsee_aws_credentials.Value
+		for _, b := range bastionStates {
+			if b.Id == bastionID {
+				spanxResp, err := svcs.Spanx.GetCredentials(context.Background(), &service.GetCredentialsRequest{
+					User: userResp.User,
+				})
+				if err != nil {
+					return err
+				}
+				userCreds = spanxResp.GetCredentials()
+			}
+		}
+
+		if userCreds == nil {
+			return NewSystemErrorF("cannot obtain AWS creds for user: %s", userResp.User.Id)
+		}
+		staticCreds := credentials.NewStaticCredentials(
+			*userCreds.AccessKeyID, *userCreds.SecretAccessKey, *userCreds.SessionToken)
+
+		var bastionInstance *ec2.Instance
+		var bastionRegion string
+		var ec2client *ec2.EC2
+
+		// TODO lookup bastion's region somewhere to avoid scanning all
+	RegionLoop:
+		for _, region := range regionList {
+			log.INFO.Printf("checking %s\n", region)
+			ec2client = ec2.New(session.New(&aws.Config{
+				Credentials: staticCreds,
+				MaxRetries:  aws.Int(3),
+				Region:      &region,
+			}))
+
+			descResponse, err := ec2client.DescribeInstances(&ec2.DescribeInstancesInput{
+				Filters: []*ec2.Filter{
+					{
+						Name:   aws.String("tag-key"),
+						Values: []*string{aws.String("opsee:id")},
+					},
+				},
+			})
+			if err != nil {
+				return err
+			}
+			for _, r := range descResponse.Reservations {
+				for _, i := range r.Instances {
+					for _, tag := range i.Tags {
+						if *tag.Key == "opsee:id" {
+							if *tag.Value == bastionID {
+								bastionInstance = i
+								bastionRegion = region
+								break RegionLoop
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if bastionInstance != nil {
+			log.INFO.Printf("found bastion instance: %s in %s\n", *bastionInstance.InstanceId, bastionRegion)
+			var err error
+			if !viper.GetBool("dry-run") {
+				// TERM THIS MOTHER
+				_, err = ec2client.TerminateInstances(&ec2.TerminateInstancesInput{InstanceIds: []*string{bastionInstance.InstanceId}})
+			}
+			if err != nil {
+				return err
+			}
+			fmt.Printf("instance termination requested for: %s in %s\n", *bastionInstance.InstanceId, bastionRegion)
+			if viper.GetBool("dry-run") {
+				fmt.Println("(but not really bc dry-run)")
+			}
 		}
 		return nil
 	},
@@ -288,8 +405,13 @@ func init() {
 
 	bastionCmd.AddCommand(bastionListCmd)
 	bastionCmd.AddCommand(bastionRestartCmd)
+	bastionCmd.AddCommand(bastionTermCmd)
 
 	flags := BoopCmd.PersistentFlags()
 	flags.BoolP("verbose", "v", false, "verbose output")
 	viper.BindPFlag("verbose", flags.Lookup("verbose"))
+
+	flags = bastionTermCmd.PersistentFlags()
+	flags.BoolP("dry-run", "n", false, "dry run")
+	viper.BindPFlag("dry-run", flags.Lookup("dry-run"))
 }
