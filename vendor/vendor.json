@@ -3,6 +3,16 @@
 	"ignore": "test",
 	"package": [
 		{
+			"path": "github.com/fatih/color",
+			"revision": "7a5857db0b2752a436d8461d88c42dea0ee191c0",
+			"revisionTime": "2016-02-12T11:24:09+02:00"
+		},
+		{
+			"path": "github.com/mattn/go-colorable",
+			"revision": "4af63d73f5bea08b682ad2cd198b1e607afd6be0",
+			"revisionTime": "2016-01-26T18:59:30+09:00"
+		},
+		{
 			"path": "github.com/opsee/basic/schema",
 			"revision": "a1c5ea41ed3c5a402bb6306aa30327db3c884931",
 			"revisionTime": "2016-03-01T09:43:51-08:00"
