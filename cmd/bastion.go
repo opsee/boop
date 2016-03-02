@@ -25,23 +25,17 @@ type bastionServices struct {
 	Keelhaul service.KeelhaulClient
 }
 
-func NewBastionServices(vape service.VapeClient, spanx service.SpanxClient, keelhaul service.KeelhaulClient) *bastionServices {
-	return &bastionServices{
-		Vape:     vape,
-		Spanx:    spanx,
-		Keelhaul: keelhaul,
-	}
-}
-
 var svcs *bastionServices
 
 // bastionCmd represents the bastion command
 var bastionCmd = &cobra.Command{
-	Use: "bastion",
+	Use:   "bastion",
+	Short: "opsee bastion managment commands",
 }
 
 var bastionListCmd = &cobra.Command{
-	Use: "list",
+	Use:   "list [customer email|UUID]",
+	Short: "list customer's bastions and their status",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if len(args) < 1 {
@@ -52,6 +46,8 @@ var bastionListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		initServices()
 
 		userResp, err := svcs.Vape.GetUser(context.Background(), &service.GetUserRequest{
 			Email:      email,
@@ -76,6 +72,16 @@ var bastionListCmd = &cobra.Command{
 			fmt.Printf("%s %s %s\n", yellow(b.Id), blue(b.Status), red(roundDuration(lastSeenDur, time.Second)))
 		}
 
+		return nil
+	},
+}
+
+var bastionRestartCmd = &cobra.Command{
+	Use:   "restart [bastion UUID...|customer email|customer UUID]",
+	Short: "restart a list of bastions or all of a customer's active bastions",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Println("restart called")
+		initServices()
 		return nil
 	},
 }
@@ -114,23 +120,7 @@ func parseUserID(id string) (email string, uuid string, err error) {
 	return "", "", NewUserError("no email or UUID found in string")
 }
 
-func init() {
-	log.SetLogFlag(log.SFILE)
-
-	BoopCmd.AddCommand(bastionCmd)
-	bastionCmd.AddCommand(bastionListCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// bastionCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// bastionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	// TODO get endpoints from yaml config w/Viper
+func initServices() {
 	conn, err := grpc.Dial("vape.in.opsee.com:443",
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
 		grpc.WithTimeout(tcpTimeout),
@@ -156,6 +146,18 @@ func init() {
 	}
 	keelhaul := service.NewKeelhaulClient(conn)
 
-	svcs = NewBastionServices(vape, spanx, keelhaul)
+	svcs = &bastionServices{
+		Vape:     vape,
+		Spanx:    spanx,
+		Keelhaul: keelhaul,
+	}
+}
 
+func init() {
+	log.SetLogFlag(log.SFILE)
+
+	BoopCmd.AddCommand(bastionCmd)
+
+	bastionCmd.AddCommand(bastionListCmd)
+	bastionCmd.AddCommand(bastionRestartCmd)
 }
