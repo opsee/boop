@@ -42,12 +42,20 @@ type bastionServices struct {
 	Keelhaul service.KeelhaulClient
 }
 
+type bastionInstance struct {
+	Instance *ec2.Instance
+	Creds    *credentials.Credentials
+	Region   string
+}
+
 var svcs *bastionServices
 
 // bastionCmd represents the bastion command
 var bastionCmd = &cobra.Command{
 	Use:   "bastion",
 	Short: "opsee bastion managment commands",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	},
 }
 
 var bastionListCmd = &cobra.Command{
@@ -124,86 +132,31 @@ var bastionRestartCmd = &cobra.Command{
 			return err
 		}
 
-		bastionStates, err := getBastions(userResp.User.CustomerId)
+		bastionInstance, err := findBastionInstance(userResp.User, bastionID)
 		if err != nil {
 			return err
 		}
 
-		var userCreds *opsee_aws_credentials.Value
-		for _, b := range bastionStates {
-			if b.Id == bastionID {
-				spanxResp, err := svcs.Spanx.GetCredentials(context.Background(), &service.GetCredentialsRequest{
-					User: userResp.User,
-				})
-				if err != nil {
-					return err
-				}
-				userCreds = spanxResp.GetCredentials()
-			}
-		}
-
-		if userCreds == nil {
-			return NewSystemErrorF("cannot obtain AWS creds for user: %s", userResp.User.Id)
-		}
-		staticCreds := credentials.NewStaticCredentials(
-			*userCreds.AccessKeyID, *userCreds.SecretAccessKey, *userCreds.SessionToken)
-
-		var bastionInstance *ec2.Instance
-		var bastionRegion string
-		var ec2client *ec2.EC2
-
-		// TODO lookup bastion's region somewhere to avoid scanning all
-	RegionLoop:
-		for _, region := range regionList {
-			log.INFO.Printf("checking %s\n", region)
-			ec2client = ec2.New(session.New(&aws.Config{
-				Credentials: staticCreds,
-				MaxRetries:  aws.Int(3),
-				Region:      &region,
-			}))
-
-			descResponse, err := ec2client.DescribeInstances(&ec2.DescribeInstancesInput{
-				Filters: []*ec2.Filter{
-					{
-						Name:   aws.String("tag-key"),
-						Values: []*string{aws.String("opsee:id")},
-					},
-				},
-			})
-			if err != nil {
-				return err
-			}
-			for _, r := range descResponse.Reservations {
-				for _, i := range r.Instances {
-					for _, tag := range i.Tags {
-						if *tag.Key == "opsee:id" {
-							if *tag.Value == bastionID {
-								bastionInstance = i
-								bastionRegion = region
-								break RegionLoop
-							}
-						}
-					}
-				}
-			}
-		}
-
 		if bastionInstance != nil {
-			log.INFO.Printf("found bastion instance: %s in %s\n", *bastionInstance.InstanceId, bastionRegion)
+			log.INFO.Printf("found bastion instance: %s in %s\n", *bastionInstance.Instance.InstanceId, bastionInstance.Region)
+			ec2client := ec2.New(session.New(&aws.Config{
+				Credentials: bastionInstance.Creds,
+				MaxRetries:  aws.Int(3),
+				Region:      &bastionInstance.Region,
+			}))
 			// REBOOT THIS MOTHER
 			_, err := ec2client.RebootInstances(&ec2.RebootInstancesInput{
-				InstanceIds: []*string{bastionInstance.InstanceId},
+				InstanceIds: []*string{bastionInstance.Instance.InstanceId},
 			})
 			if err != nil {
 				return err
 			}
-			fmt.Printf("instance restart requested for: %s in %s\n", *bastionInstance.InstanceId, bastionRegion)
+			fmt.Printf("instance restart requested for: %s in %s\n", *bastionInstance.Instance.InstanceId, bastionInstance.Region)
 		}
 		return nil
 	},
 }
 
-// TODO de-duplicate this code w/term
 var bastionTermCmd = &cobra.Command{
 	Use:   "terminate [customer email|customer UUID] [bastion UUID]",
 	Short: "terminate a customer bastion",
@@ -237,87 +190,105 @@ var bastionTermCmd = &cobra.Command{
 			return err
 		}
 
-		bastionStates, err := getBastions(userResp.User.CustomerId)
+		bastionInstance, err := findBastionInstance(userResp.User, bastionID)
 		if err != nil {
 			return err
 		}
 
-		var userCreds *opsee_aws_credentials.Value
-		for _, b := range bastionStates {
-			if b.Id == bastionID {
-				spanxResp, err := svcs.Spanx.GetCredentials(context.Background(), &service.GetCredentialsRequest{
-					User: userResp.User,
-				})
-				if err != nil {
-					return err
-				}
-				userCreds = spanxResp.GetCredentials()
-			}
-		}
-
-		if userCreds == nil {
-			return NewSystemErrorF("cannot obtain AWS creds for user: %s", userResp.User.Id)
-		}
-		staticCreds := credentials.NewStaticCredentials(
-			*userCreds.AccessKeyID, *userCreds.SecretAccessKey, *userCreds.SessionToken)
-
-		var bastionInstance *ec2.Instance
-		var bastionRegion string
-		var ec2client *ec2.EC2
-
-		// TODO lookup bastion's region somewhere to avoid scanning all
-	RegionLoop:
-		for _, region := range regionList {
-			log.INFO.Printf("checking %s\n", region)
-			ec2client = ec2.New(session.New(&aws.Config{
-				Credentials: staticCreds,
-				MaxRetries:  aws.Int(3),
-				Region:      &region,
-			}))
-
-			descResponse, err := ec2client.DescribeInstances(&ec2.DescribeInstancesInput{
-				Filters: []*ec2.Filter{
-					{
-						Name:   aws.String("tag-key"),
-						Values: []*string{aws.String("opsee:id")},
-					},
-				},
-			})
-			if err != nil {
-				return err
-			}
-			for _, r := range descResponse.Reservations {
-				for _, i := range r.Instances {
-					for _, tag := range i.Tags {
-						if *tag.Key == "opsee:id" {
-							if *tag.Value == bastionID {
-								bastionInstance = i
-								bastionRegion = region
-								break RegionLoop
-							}
-						}
-					}
-				}
-			}
-		}
-
 		if bastionInstance != nil {
-			log.INFO.Printf("found bastion instance: %s in %s\n", *bastionInstance.InstanceId, bastionRegion)
+			log.INFO.Printf("found bastion instance: %s in %s\n", *bastionInstance.Instance.InstanceId, bastionInstance.Region)
 			var err error
+			ec2client := ec2.New(session.New(&aws.Config{
+				Credentials: bastionInstance.Creds,
+				MaxRetries:  aws.Int(3),
+				Region:      &bastionInstance.Region,
+			}))
 			if !viper.GetBool("dry-run") {
 				// TERM THIS MOTHER
-				_, err = ec2client.TerminateInstances(&ec2.TerminateInstancesInput{InstanceIds: []*string{bastionInstance.InstanceId}})
+				_, err = ec2client.TerminateInstances(&ec2.TerminateInstancesInput{InstanceIds: []*string{bastionInstance.Instance.InstanceId}})
 			}
 			if err != nil {
 				return err
 			}
-			fmt.Printf("instance termination requested for: %s in %s\n", *bastionInstance.InstanceId, bastionRegion)
+			fmt.Printf("instance termination requested for: %s in %s\n", *bastionInstance.Instance.InstanceId, bastionInstance.Region)
 			if viper.GetBool("dry-run") {
 				fmt.Println("(but not really bc dry-run)")
 			}
 		}
 		return nil
 	},
+}
+
+func findBastionInstance(user *schema.User, bastionID string) (*bastionInstance, error) {
+	bastionStates, err := getBastions(user.CustomerId)
+	if err != nil {
+		return nil, err
+	}
+
+	var userCreds *opsee_aws_credentials.Value
+	for _, b := range bastionStates {
+		if b.Id == bastionID {
+			spanxResp, err := svcs.Spanx.GetCredentials(context.Background(), &service.GetCredentialsRequest{
+				User: user,
+			})
+			if err != nil {
+				return nil, err
+			}
+			userCreds = spanxResp.GetCredentials()
+		}
+	}
+
+	if userCreds == nil {
+		return nil, NewSystemErrorF("cannot obtain AWS creds for user: %s", user.Id)
+	}
+	staticCreds := credentials.NewStaticCredentials(
+		*userCreds.AccessKeyID, *userCreds.SecretAccessKey, *userCreds.SessionToken)
+
+	var instance *ec2.Instance
+	var bastionRegion string
+	var ec2client *ec2.EC2
+
+	// TODO lookup bastion's region somewhere to avoid scanning all
+RegionLoop:
+	for _, region := range regionList {
+		log.INFO.Printf("checking %s\n", region)
+		ec2client = ec2.New(session.New(&aws.Config{
+			Credentials: staticCreds,
+			MaxRetries:  aws.Int(3),
+			Region:      &region,
+		}))
+
+		descResponse, err := ec2client.DescribeInstances(&ec2.DescribeInstancesInput{
+			Filters: []*ec2.Filter{
+				{
+					Name:   aws.String("tag-key"),
+					Values: []*string{aws.String("opsee:id")},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range descResponse.Reservations {
+			for _, i := range r.Instances {
+				for _, tag := range i.Tags {
+					if *tag.Key == "opsee:id" {
+						if *tag.Value == bastionID {
+							instance = i
+							bastionRegion = region
+							break RegionLoop
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return &bastionInstance{
+		Instance: instance,
+		Creds:    staticCreds,
+		Region:   bastionRegion,
+	}, nil
 }
 
 func getBastions(custID string) (states []*schema.BastionState, err error) {
@@ -402,16 +373,20 @@ func init() {
 	log.SetLogFlag(log.SFILE)
 
 	BoopCmd.AddCommand(bastionCmd)
-
-	bastionCmd.AddCommand(bastionListCmd)
-	bastionCmd.AddCommand(bastionRestartCmd)
-	bastionCmd.AddCommand(bastionTermCmd)
-
 	flags := BoopCmd.PersistentFlags()
 	flags.BoolP("verbose", "v", false, "verbose output")
 	viper.BindPFlag("verbose", flags.Lookup("verbose"))
 
+	bastionCmd.AddCommand(bastionListCmd)
+
+	bastionCmd.AddCommand(bastionRestartCmd)
+
+	bastionCmd.AddCommand(bastionTermCmd)
 	flags = bastionTermCmd.PersistentFlags()
 	flags.BoolP("dry-run", "n", false, "dry run")
 	viper.BindPFlag("dry-run", flags.Lookup("dry-run"))
+
+	bastionCmd.AddCommand(bastionCFN)
+
+	bastionCFN.AddCommand(bastionCFNUpdate)
 }

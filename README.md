@@ -1,9 +1,9 @@
-boop: Boop Opsee Operations 
-=============================
+boop
+=====
 
 ![boop](./boop.jpg)
 
-A CLI for doing stuff to opsee
+A CLI for doing stuff to opsee, mostly bastion related
 
 Installation
 ------------
