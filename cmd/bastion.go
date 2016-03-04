@@ -226,6 +226,7 @@ func findBastionInstance(user *schema.User, bastionID string) (*bastionInstance,
 	}
 
 	var userCreds *opsee_aws_credentials.Value
+	var foundBast bool
 	for _, b := range bastionStates {
 		if b.Id == bastionID {
 			spanxResp, err := svcs.Spanx.GetCredentials(context.Background(), &service.GetCredentialsRequest{
@@ -235,9 +236,14 @@ func findBastionInstance(user *schema.User, bastionID string) (*bastionInstance,
 				return nil, err
 			}
 			userCreds = spanxResp.GetCredentials()
+			foundBast = true
+			break
 		}
 	}
 
+	if !foundBast {
+		return nil, NewSystemErrorF("cannot find bastion: %s", bastionID)
+	}
 	if userCreds == nil {
 		return nil, NewSystemErrorF("cannot obtain AWS creds for user: %s", user.Id)
 	}
