@@ -14,6 +14,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+const cfnS3URLTemplate = "https://s3%s%s.amazonaws.com/opsee-bastion-cf-%s/beta/bastion-cf.template"
+
 type bastionStack struct {
 	Creds  *credentials.Credentials
 	Region string
@@ -59,9 +61,32 @@ var bastionCFNUpdate = &cobra.Command{
 
 		if stack != nil {
 			log.INFO.Printf("found bastion stack: %s in %s\n", *stack.Stack.StackId, stack.Region)
+			log.INFO.Printf("requesting template update with: %s\n", getS3URL(stack))
+			cfnClient := cloudformation.New(session.New(), aws.NewConfig().WithCredentials(stack.Creds).WithRegion(stack.Region))
+			_, err := cfnClient.UpdateStack(&cloudformation.UpdateStackInput{
+				StackName:   aws.String("opsee-stack-" + userResp.User.CustomerId),
+				TemplateURL: aws.String(getS3URL(stack)),
+			})
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	},
+}
+
+func getS3URL(s *bastionStack) string {
+	sep := "-"
+	reg := s.Region
+
+	url := fmt.Sprintf(cfnS3URLTemplate, sep, reg, reg)
+
+	// p cool exception
+	if s.Region == "us-east-1" {
+		url = fmt.Sprintf(cfnS3URLTemplate, "", "", reg)
+	}
+
+	return url
 }
 
 func findBastionStack(user *schema.User) (*bastionStack, error) {
@@ -79,12 +104,11 @@ func findBastionStack(user *schema.User) (*bastionStack, error) {
 	staticCreds := credentials.NewStaticCredentials(
 		*userCreds.AccessKeyID, *userCreds.SecretAccessKey, *userCreds.SessionToken)
 
-	var cfnClient *cloudformation.CloudFormation
 	var stack *bastionStack
 
 	for _, region := range regionList {
 		log.INFO.Printf("checking %s\n", region)
-		cfnClient = cloudformation.New(session.New(), aws.NewConfig().WithCredentials(staticCreds).WithRegion(region))
+		cfnClient := cloudformation.New(session.New(), aws.NewConfig().WithCredentials(staticCreds).WithRegion(region))
 		stackname := fmt.Sprintf("opsee-stack-%s", user.CustomerId)
 		descResponse, err := cfnClient.DescribeStacks(&cloudformation.DescribeStacksInput{
 			StackName: &stackname,
