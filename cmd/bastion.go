@@ -72,6 +72,10 @@ var bastionListCmd = &cobra.Command{
 			return err
 		}
 
+		if viper.GetBool("verbose") {
+			log.SetStdoutThreshold(log.LevelInfo)
+		}
+
 		initServices()
 
 		userResp, err := svcs.Vape.GetUser(context.Background(), &service.GetUserRequest{
@@ -82,7 +86,10 @@ var bastionListCmd = &cobra.Command{
 			return err
 		}
 
-		bastionStates, err := getBastions(userResp.User.CustomerId)
+		u := userResp.User
+		log.INFO.Printf("user info: %s, %s, %s\n", u.Email, u.CustomerId, u.Name)
+
+		bastionStates, err := getBastions(u.CustomerId)
 		if err != nil {
 			return err
 		}
