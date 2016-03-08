@@ -12,14 +12,100 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"path"
 )
 
-const cfnS3URLTemplate = "https://s3%s%s.amazonaws.com/opsee-bastion-cf-%s/beta/bastion-cf.template"
+const cfnS3BucketURL = "https://s3%s%s.amazonaws.com/opsee-bastion-cf-%s/beta"
+const cfnTemplate = "bastion-cf.template"
+const secGrpTemplate = "bastion-ingress-cf.template"
 
 type bastionStack struct {
 	Creds  *credentials.Credentials
 	Region string
 	Stack  *cloudformation.Stack
+}
+
+func (s bastionStack) getStackParams() []*cloudformation.Parameter {
+	return []*cloudformation.Parameter{
+		{
+			ParameterKey: aws.String("ImageId"),
+			// TODO optionally get this from cmdline
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:     aws.String("BastionIngressTemplateUrl"),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:   aws.String("AllowSSH"),
+			ParameterValue: aws.String("True"),
+		},
+		{
+			ParameterKey:     aws.String("InstanceType"),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:     aws.String("UserData"),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:     aws.String("VpcId"),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:     aws.String("SubnetId"),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:     aws.String("AssociatePublicIpAddress"),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:     aws.String("CustomerId"),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:     aws.String("BastionId"),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:     aws.String("OpseeRole"),
+			UsePreviousValue: aws.Bool(true),
+		},
+	}
+}
+
+func (s bastionStack) getCFNTemplate() ([]byte, error) {
+	resp, err := http.Get(s.getS3URL(cfnTemplate))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
+}
+
+func (s bastionStack) getS3URL(template string) string {
+	sep := "-"
+	reg := s.Region
+
+	bucketUrl := fmt.Sprintf(cfnS3BucketURL, sep, reg, reg)
+	// p cool exception
+	if s.Region == "us-east-1" {
+		bucketUrl = fmt.Sprintf(cfnS3BucketURL, "", "", reg)
+	}
+
+	u, err := url.Parse(bucketUrl)
+	if err != nil {
+		log.WARN.Printf("failed to parse: %s\n", bucketUrl)
+		return ""
+	}
+
+	u.Path = path.Join(u.Path, template)
+
+	return u.String()
 }
 
 var bastionCFN = &cobra.Command{
@@ -61,11 +147,21 @@ var bastionCFNUpdate = &cobra.Command{
 
 		if stack != nil {
 			log.INFO.Printf("found bastion stack: %s in %s\n", *stack.Stack.StackId, stack.Region)
-			log.INFO.Printf("requesting template update with: %s\n", getS3URL(stack))
+			log.INFO.Printf("requesting stack update with: %s\n", stack.getS3URL(cfnTemplate))
+
+			templateBytes, err := stack.getCFNTemplate()
+			if err != nil {
+				return err
+			}
+
 			cfnClient := cloudformation.New(session.New(), aws.NewConfig().WithCredentials(stack.Creds).WithRegion(stack.Region))
-			_, err := cfnClient.UpdateStack(&cloudformation.UpdateStackInput{
-				StackName:   aws.String("opsee-stack-" + userResp.User.CustomerId),
-				TemplateURL: aws.String(getS3URL(stack)),
+			_, err = cfnClient.UpdateStack(&cloudformation.UpdateStackInput{
+				StackName:    aws.String("opsee-stack-" + userResp.User.CustomerId),
+				TemplateBody: aws.String(string(templateBytes)),
+				Capabilities: []*string{
+					aws.String("CAPABILITY_IAM"),
+				},
+				Parameters: stack.getStackParams(),
 			})
 			if err != nil {
 				return err
@@ -73,20 +169,6 @@ var bastionCFNUpdate = &cobra.Command{
 		}
 		return nil
 	},
-}
-
-func getS3URL(s *bastionStack) string {
-	sep := "-"
-	reg := s.Region
-
-	url := fmt.Sprintf(cfnS3URLTemplate, sep, reg, reg)
-
-	// p cool exception
-	if s.Region == "us-east-1" {
-		url = fmt.Sprintf(cfnS3URLTemplate, "", "", reg)
-	}
-
-	return url
 }
 
 func findBastionStack(user *schema.User) (*bastionStack, error) {

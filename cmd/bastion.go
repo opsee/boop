@@ -23,7 +23,7 @@ import (
 
 const uuidFormat = `^[a-z0-9]{8}-[a-z0-9]{4}-[1-5][a-z0-9]{3}-[a-z0-9]{4}-[a-z0-9]{12}$`
 const emailFormat = `^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`
-const tcpTimeout = time.Duration(1) * time.Second
+const tcpTimeout = time.Duration(3) * time.Second
 
 var regionList = []string{
 	"us-west-1",
