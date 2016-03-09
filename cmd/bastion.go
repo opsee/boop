@@ -17,7 +17,9 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	grpc_credentials "google.golang.org/grpc/credentials"
+	"os"
 	"regexp"
+	"text/tabwriter"
 	"time"
 )
 
@@ -95,12 +97,31 @@ var bastionListCmd = &cobra.Command{
 		}
 
 		yellow := color.New(color.FgYellow).SprintFunc()
-		red := color.New(color.FgRed).SprintFunc()
 		blue := color.New(color.FgBlue).SprintFunc()
-		for _, b := range bastionStates {
-			lastSeenDur := time.Since(time.Unix(b.LastSeen.Seconds, 0))
-			fmt.Printf("%s %s %s\n", yellow(b.Id), blue(b.Status), red(roundDuration(lastSeenDur, time.Second)))
+		header := color.New(color.FgWhite).SprintFunc()
+
+		w := new(tabwriter.Writer)
+		w.Init(os.Stdout, 1, 0, 2, ' ', 0)
+
+		if len(bastionStates) > 0 {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", header("id"), "status",
+				header("last seen"), header("region"))
 		}
+
+		for _, b := range bastionStates {
+			reg := ""
+			if b.Status == "active" {
+				inst, err := findBastionInstance(u, b.Id)
+				if err != nil {
+					log.WARN.Printf("error finding bastion instance for %s\n", b.Id)
+				} else {
+					reg = inst.Region
+				}
+			}
+			lastSeenDur := time.Since(time.Unix(b.LastSeen.Seconds, 0))
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", yellow(b.Id), b.Status, blue(roundDuration(lastSeenDur, time.Second)), reg)
+		}
+		w.Flush()
 
 		return nil
 	},
