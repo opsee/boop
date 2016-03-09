@@ -62,10 +62,6 @@ func (s bastionStack) getStackParams() []*cloudformation.Parameter {
 			ParameterKey:     aws.String("OpseeRole"),
 			UsePreviousValue: aws.Bool(true),
 		},
-		{
-			ParameterKey:     aws.String("BastionIngressTemplateUrl"),
-			UsePreviousValue: aws.Bool(true),
-		},
 	}
 
 	if viper.IsSet("cfnup-ami-id") {
