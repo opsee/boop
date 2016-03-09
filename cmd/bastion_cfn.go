@@ -29,20 +29,7 @@ type bastionStack struct {
 }
 
 func (s bastionStack) getStackParams() []*cloudformation.Parameter {
-	return []*cloudformation.Parameter{
-		{
-			ParameterKey: aws.String("ImageId"),
-			// TODO optionally get this from cmdline
-			UsePreviousValue: aws.Bool(true),
-		},
-		{
-			ParameterKey:     aws.String("BastionIngressTemplateUrl"),
-			UsePreviousValue: aws.Bool(true),
-		},
-		{
-			ParameterKey:   aws.String("AllowSSH"),
-			ParameterValue: aws.String("True"),
-		},
+	params := []*cloudformation.Parameter{
 		{
 			ParameterKey:     aws.String("InstanceType"),
 			UsePreviousValue: aws.Bool(true),
@@ -75,7 +62,37 @@ func (s bastionStack) getStackParams() []*cloudformation.Parameter {
 			ParameterKey:     aws.String("OpseeRole"),
 			UsePreviousValue: aws.Bool(true),
 		},
+		{
+			ParameterKey:     aws.String("BastionIngressTemplateUrl"),
+			UsePreviousValue: aws.Bool(true),
+		},
 	}
+
+	if viper.IsSet("cfnup-ami-id") {
+		params = append(params, &cloudformation.Parameter{
+			ParameterKey:   aws.String("ImageId"),
+			ParameterValue: aws.String(viper.GetString("cfnup-ami-id")),
+		})
+	} else {
+		params = append(params, &cloudformation.Parameter{
+			ParameterKey:     aws.String("ImageId"),
+			UsePreviousValue: aws.Bool(true),
+		})
+	}
+
+	if viper.IsSet("cfnup-allow-ssh") {
+		params = append(params, &cloudformation.Parameter{
+			ParameterKey:   aws.String("AllowSSH"),
+			ParameterValue: aws.String(viper.GetString("cfnup-allow-ssh")),
+		})
+	} else {
+		params = append(params, &cloudformation.Parameter{
+			ParameterKey:     aws.String("AllowSSH"),
+			UsePreviousValue: aws.Bool(true),
+		})
+	}
+
+	return params
 }
 
 func (s bastionStack) getCFNTemplate() ([]byte, error) {
@@ -140,23 +157,25 @@ var bastionCFNUpdate = &cobra.Command{
 			return err
 		}
 
-		stack, err := findBastionStack(userResp.User)
+		u := userResp.User
+		stack, err := findBastionStack(u)
 		if err != nil {
 			return err
 		}
 
 		if stack != nil {
 			log.INFO.Printf("found bastion stack: %s in %s\n", *stack.Stack.StackId, stack.Region)
-			log.INFO.Printf("requesting stack update with: %s\n", stack.getS3URL(cfnTemplate))
 
 			templateBytes, err := stack.getCFNTemplate()
 			if err != nil {
 				return err
 			}
 
+			stackName := aws.String("opsee-stack-" + u.CustomerId)
+
 			cfnClient := cloudformation.New(session.New(), aws.NewConfig().WithCredentials(stack.Creds).WithRegion(stack.Region))
 			_, err = cfnClient.UpdateStack(&cloudformation.UpdateStackInput{
-				StackName:    aws.String("opsee-stack-" + userResp.User.CustomerId),
+				StackName:    stackName,
 				TemplateBody: aws.String(string(templateBytes)),
 				Capabilities: []*string{
 					aws.String("CAPABILITY_IAM"),
@@ -165,6 +184,34 @@ var bastionCFNUpdate = &cobra.Command{
 			})
 			if err != nil {
 				return err
+			}
+
+			fmt.Printf("requested stack update\n")
+			if viper.GetBool("cfnup-wait") {
+				err = cfnClient.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+					StackName: stackName,
+				})
+				if err != nil {
+					return err
+				}
+
+				descResponse, err := cfnClient.DescribeStacks(&cloudformation.DescribeStacksInput{
+					StackName: stackName,
+				})
+				if err != nil {
+					return err
+				}
+
+				if len(descResponse.Stacks) > 1 {
+					return NewSystemErrorF("multiple opsee stacks found for cust %s in ", u.CustomerId)
+				}
+
+				if len(descResponse.Stacks) == 0 {
+					return NewSystemErrorF("cannot find opsee stack for cust: %s", u.CustomerId)
+				}
+
+				stk := descResponse.Stacks[0]
+				fmt.Printf("update complete: %s, %s\n", *stk.StackStatus, *stk.StackStatusReason)
 			}
 		}
 		return nil
@@ -193,7 +240,7 @@ func findBastionStack(user *schema.User) (*bastionStack, error) {
 		cfnClient := cloudformation.New(session.New(), aws.NewConfig().WithCredentials(staticCreds).WithRegion(region))
 		stackname := fmt.Sprintf("opsee-stack-%s", user.CustomerId)
 		descResponse, err := cfnClient.DescribeStacks(&cloudformation.DescribeStacksInput{
-			StackName: &stackname,
+			StackName: aws.String(stackname),
 		})
 		if err != nil {
 			return nil, err
@@ -221,7 +268,14 @@ func findBastionStack(user *schema.User) (*bastionStack, error) {
 func init() {
 	bastionCmd.AddCommand(bastionCFN)
 	bastionCFN.AddCommand(bastionCFNUpdate)
+
 	flags := bastionCFNUpdate.Flags()
-	flags.BoolP("dry-run", "n", false, "dry run")
-	viper.BindPFlag("cfnup-dry-run", flags.Lookup("dry-run"))
+	flags.BoolP("allow-ssh", "s", false, "allow ssh to bastion")
+	viper.BindPFlag("cfnup-allow-ssh", flags.Lookup("allow-ssh"))
+
+	flags.StringP("ami-id", "i", "", "new AMI id for CFN update")
+	viper.BindPFlag("cfnup-ami-id", flags.Lookup("ami-id"))
+
+	flags.BoolP("wait", "w", false, "wait for update to complate")
+	viper.BindPFlag("cfnup-wait", flags.Lookup("wait"))
 }
