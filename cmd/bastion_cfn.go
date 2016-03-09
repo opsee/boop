@@ -239,20 +239,15 @@ func findBastionStack(user *schema.User) (*bastionStack, error) {
 		log.INFO.Printf("checking %s\n", region)
 		cfnClient := cloudformation.New(session.New(), aws.NewConfig().WithCredentials(staticCreds).WithRegion(region))
 		stackname := fmt.Sprintf("opsee-stack-%s", user.CustomerId)
-		descResponse, err := cfnClient.DescribeStacks(&cloudformation.DescribeStacksInput{
+		descResponse, _ := cfnClient.DescribeStacks(&cloudformation.DescribeStacksInput{
 			StackName: aws.String(stackname),
 		})
-		if err != nil {
-			return nil, err
-		}
 
 		if len(descResponse.Stacks) > 1 {
-			return nil, NewSystemErrorF("multiple opsee stacks found for cust %s in ", user.CustomerId)
+			return nil, NewSystemErrorF("multiple opsee stacks found for cust %s in %s", user.CustomerId, region)
 		}
 
-		if len(descResponse.Stacks) == 0 {
-			return nil, NewSystemErrorF("cannot find opsee stack for cust: %s", user.CustomerId)
-		} else {
+		if len(descResponse.Stacks) > 0 {
 			stack = &bastionStack{
 				Stack:  descResponse.Stacks[0],
 				Region: region,
@@ -260,6 +255,10 @@ func findBastionStack(user *schema.User) (*bastionStack, error) {
 			}
 			break
 		}
+	}
+
+	if stack == nil {
+		return nil, NewSystemErrorF("cannot find opsee stack for cust: %s", user.CustomerId)
 	}
 
 	return stack, nil
