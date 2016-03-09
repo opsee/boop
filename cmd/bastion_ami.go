@@ -50,12 +50,14 @@ var bastionAMIList = &cobra.Command{
 
 		yellow := color.New(color.FgYellow).SprintFunc()
 		blue := color.New(color.FgBlue).SprintFunc()
+		header := color.New(color.FgWhite).SprintFunc()
 
 		w := new(tabwriter.Writer)
 		w.Init(os.Stdout, 1, 0, 2, ' ', 0)
 
 		if len(amiList) > 0 {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", yellow("id"), "name", blue("sha"), "create date", blue("release"))
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", header("id"), "name",
+				header("sha"), "create date", header("release"))
 		}
 
 		for _, ami := range amiList {
