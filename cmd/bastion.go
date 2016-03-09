@@ -210,7 +210,7 @@ var bastionTermCmd = &cobra.Command{
 				MaxRetries:  aws.Int(3),
 				Region:      &bastionInstance.Region,
 			}))
-			if !viper.GetBool("dry-run") {
+			if !viper.GetBool("term-dry-run") {
 				// TERM THIS MOTHER
 				_, err = ec2client.TerminateInstances(&ec2.TerminateInstancesInput{InstanceIds: []*string{bastionInstance.Instance.InstanceId}})
 			}
@@ -218,7 +218,7 @@ var bastionTermCmd = &cobra.Command{
 				return err
 			}
 			fmt.Printf("instance termination requested for: %s in %s\n", *bastionInstance.Instance.InstanceId, bastionInstance.Region)
-			if viper.GetBool("dry-run") {
+			if viper.GetBool("term-dry-run") {
 				fmt.Println("(but not really bc dry-run)")
 			}
 		}
@@ -395,11 +395,7 @@ func init() {
 	bastionCmd.AddCommand(bastionRestartCmd)
 
 	bastionCmd.AddCommand(bastionTermCmd)
-	flags = bastionTermCmd.PersistentFlags()
+	flags = bastionTermCmd.Flags()
 	flags.BoolP("dry-run", "n", false, "dry run")
-	viper.BindPFlag("dry-run", flags.Lookup("dry-run"))
-
-	bastionCmd.AddCommand(bastionCFN)
-
-	bastionCFN.AddCommand(bastionCFNUpdate)
+	viper.BindPFlag("term-dry-run", flags.Lookup("dry-run"))
 }

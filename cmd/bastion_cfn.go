@@ -217,3 +217,11 @@ func findBastionStack(user *schema.User) (*bastionStack, error) {
 
 	return stack, nil
 }
+
+func init() {
+	bastionCmd.AddCommand(bastionCFN)
+	bastionCFN.AddCommand(bastionCFNUpdate)
+	flags := bastionCFNUpdate.Flags()
+	flags.BoolP("dry-run", "n", false, "dry run")
+	viper.BindPFlag("cfnup-dry-run", flags.Lookup("dry-run"))
+}
