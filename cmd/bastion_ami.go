@@ -13,20 +13,24 @@ import (
 	//log "github.com/mborsuk/jwalterweatherman"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
+	"text/tabwriter"
 )
 
 type ImageList []*ec2.Image
 
 func (l ImageList) Len() int           { return len(l) }
 func (l ImageList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
-func (l ImageList) Less(i, j int) bool { return *l[i].Name > *l[j].Name }
+func (l ImageList) Less(i, j int) bool { return *l[i].CreationDate > *l[j].CreationDate }
 
 func init() {
 	bastionCmd.AddCommand(bastionAMI)
 	bastionAMI.AddCommand(bastionAMIList)
-	flags := bastionAMI.Flags()
+	flags := bastionAMI.PersistentFlags()
 	flags.StringP("region", "r", "us-west-1", "region")
 	viper.BindPFlag("ami-list-region", flags.Lookup("region"))
+	flags.IntP("num-results", "n", 0, "max number of sorted results (default no limit)")
+	viper.BindPFlag("ami-list-num", flags.Lookup("num-results"))
 }
 
 var bastionAMI = &cobra.Command{
@@ -45,9 +49,32 @@ var bastionAMIList = &cobra.Command{
 		}
 
 		yellow := color.New(color.FgYellow).SprintFunc()
-		for _, ami := range amiList {
-			fmt.Printf("%s %s\n", yellow(*ami.ImageId), *ami.Name)
+		blue := color.New(color.FgBlue).SprintFunc()
+
+		w := new(tabwriter.Writer)
+		w.Init(os.Stdout, 1, 0, 2, ' ', 0)
+
+		if len(amiList) > 0 {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", yellow("id"), "name", blue("sha"), "create date", blue("release"))
 		}
+
+		for _, ami := range amiList {
+			tag := ""
+			rel := ""
+			for _, t := range ami.Tags {
+				if *t.Key == "sha" {
+					tag = *t.Value
+					if len(tag) > 8 {
+						tag = tag[:8]
+					}
+				} else if *t.Key == "release" {
+					rel = *t.Value
+				}
+
+			}
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", yellow(*ami.ImageId), *ami.Name, blue(tag), *ami.CreationDate, blue(rel))
+		}
+		w.Flush()
 
 		return nil
 	},
@@ -76,12 +103,8 @@ func getAMIList() ([]*ec2.Image, error) {
 		},
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String("tag:release"),
-				Values: []*string{aws.String("stable")},
-			},
-			{
-				Name:   aws.String("is-public"),
-				Values: []*string{aws.String("true")},
+				Name:   aws.String("tag:opsee"),
+				Values: []*string{aws.String("bastion")},
 			},
 		},
 	})
@@ -91,6 +114,13 @@ func getAMIList() ([]*ec2.Image, error) {
 	}
 
 	sort.Sort(ImageList(imageOutput.Images))
+
+	if viper.IsSet("ami-list-num") {
+		n := viper.GetInt("ami-list-num")
+		if n < len(imageOutput.Images) {
+			return imageOutput.Images[0:n], nil
+		}
+	}
 
 	return imageOutput.Images, nil
 }
