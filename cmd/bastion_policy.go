@@ -23,14 +23,7 @@ const (
     {
       "Effect": "Allow",
       "Action": [
-        "autoscaling:DescribeLoadBalancers",
-        "autoscaling:DescribeAutoScalingGroups",
-        "autoscaling:CreateLaunchConfiguration",
-        "autoscaling:DescribeLaunchConfigurations",
-        "autoscaling:DeleteLaunchConfiguration",
-        "autoscaling:UpdateAutoScalingGroup",
-        "autoscaling:DescribeScalingActivities",
-        "autoscaling:DescribeScheduledActions",
+        "autoscaling:*",
         "cloudformation:CreateStack",
         "cloudformation:DeleteStack",
         "cloudformation:DescribeStacks",
