@@ -19,7 +19,6 @@ import (
 const (
 	PolicyDoc = `{
   "Version": "2012-10-17",
-  "Id": "10",
   "Statement": [
     {
       "Effect": "Allow",
@@ -30,6 +29,8 @@ const (
         "autoscaling:DescribeLaunchConfigurations",
         "autoscaling:DeleteLaunchConfiguration",
         "autoscaling:UpdateAutoScalingGroup",
+        "autoscaling:DescribeScalingActivities",
+        "autoscaling:DescribeScheduledActions",
         "cloudformation:CreateStack",
         "cloudformation:DeleteStack",
         "cloudformation:DescribeStacks",
