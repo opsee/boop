@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/fatih/color"
 	log "github.com/mborsuk/jwalterweatherman"
 	"github.com/opsee/basic/schema"
 	"github.com/opsee/basic/service"
@@ -15,7 +16,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
+	"text/tabwriter"
 )
 
 const cfnS3BucketURL = "https://s3%s%s.amazonaws.com/opsee-bastion-cf-%s/beta"
@@ -209,6 +212,78 @@ var bastionCFNUpdate = &cobra.Command{
 	},
 }
 
+var bastionCFNEvents = &cobra.Command{
+	Use:   "events [customer email|customer UUID]",
+	Short: "list recent CFN events for a customer's bastions",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return NewUserError("missing argument")
+		}
+
+		email, uuid, err := parseUserID(args[0])
+		if err != nil {
+			return err
+		}
+
+		if viper.GetBool("verbose") {
+			log.SetStdoutThreshold(log.LevelInfo)
+		}
+
+		initServices()
+
+		userResp, err := svcs.Vape.GetUser(context.Background(), &service.GetUserRequest{
+			Email:      email,
+			CustomerId: uuid,
+		})
+		if err != nil {
+			return err
+		}
+
+		u := userResp.User
+		stack, err := findBastionStack(u)
+		if err != nil {
+			return err
+		}
+
+		if stack != nil {
+			log.INFO.Printf("found bastion stack: %s in %s\n", *stack.Stack.StackId, stack.Region)
+
+			cfnClient := cloudformation.New(session.New(), aws.NewConfig().WithCredentials(stack.Creds).WithRegion(stack.Region))
+			resp, err := cfnClient.DescribeStackEvents(&cloudformation.DescribeStackEventsInput{
+				StackName: aws.String(fmt.Sprintf("opsee-stack-%s", u.CustomerId)),
+			})
+			if err != nil {
+				return err
+			}
+
+			w := new(tabwriter.Writer)
+			w.Init(os.Stdout, 1, 0, 2, ' ', 0)
+			yellow := color.New(color.FgYellow).SprintFunc()
+			blue := color.New(color.FgBlue).SprintFunc()
+			header := color.New(color.FgWhite).SprintFunc()
+
+			if len(resp.StackEvents) > 0 {
+				fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", header("time"), "status", header("resource"), "reason")
+			}
+			for i, e := range resp.StackEvents {
+				if i > viper.GetInt("list-events-num") {
+					break
+				}
+				t := *e.Timestamp
+				event := *e.ResourceStatus
+				eres := *e.LogicalResourceId
+				ereason := ""
+				if e.ResourceStatusReason != nil {
+					ereason = *e.ResourceStatusReason
+				}
+				fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", yellow(t), event, blue(eres), ereason)
+			}
+			w.Flush()
+		}
+		return nil
+	},
+}
+
 func findBastionStack(user *schema.User) (*bastionStack, error) {
 	spanxResp, err := svcs.Spanx.GetCredentials(context.Background(), &service.GetCredentialsRequest{
 		User: user,
@@ -257,9 +332,14 @@ func findBastionStack(user *schema.User) (*bastionStack, error) {
 
 func init() {
 	bastionCmd.AddCommand(bastionCFN)
-	bastionCFN.AddCommand(bastionCFNUpdate)
 
-	flags := bastionCFNUpdate.Flags()
+	bastionCFN.AddCommand(bastionCFNEvents)
+	flags := bastionCFNEvents.Flags()
+	flags.IntP("num", "n", 10, "max number of events to display")
+	viper.BindPFlag("list-events-num", flags.Lookup("num"))
+
+	bastionCFN.AddCommand(bastionCFNUpdate)
+	flags = bastionCFNUpdate.Flags()
 	flags.BoolP("allow-ssh", "s", false, "allow ssh to bastion")
 	viper.BindPFlag("cfnup-allow-ssh", flags.Lookup("allow-ssh"))
 
