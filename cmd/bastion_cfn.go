@@ -167,7 +167,8 @@ var bastionCFNUpdate = &cobra.Command{
 
 			stackName := aws.String("opsee-stack-" + u.CustomerId)
 
-			cfnClient := cloudformation.New(session.New(), aws.NewConfig().WithCredentials(stack.Creds).WithRegion(stack.Region))
+			cfnClient := cloudformation.New(session.New(),
+				aws.NewConfig().WithCredentials(stack.Creds).WithRegion(stack.Region).WithMaxRetries(10))
 			_, err = cfnClient.UpdateStack(&cloudformation.UpdateStackInput{
 				StackName:    stackName,
 				TemplateBody: aws.String(string(templateBytes)),

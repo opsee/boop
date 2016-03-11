@@ -118,6 +118,7 @@ var bastionListCmd = &cobra.Command{
 					reg = inst.Region
 				}
 			}
+
 			lastSeenDur := time.Since(time.Unix(b.LastSeen.Seconds, 0))
 			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", yellow(b.Id), b.Status, blue(roundDuration(lastSeenDur, time.Second)), reg)
 		}
@@ -412,6 +413,9 @@ func init() {
 	viper.BindPFlag("verbose", flags.Lookup("verbose"))
 
 	bastionCmd.AddCommand(bastionListCmd)
+	flags := BoopCmd.Flags()
+	flags.BoolP("active", "a", false, "list active only")
+	viper.BindPFlag("list-active", flags.Lookup("active"))
 
 	bastionCmd.AddCommand(bastionRestartCmd)
 
