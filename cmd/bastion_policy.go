@@ -30,6 +30,7 @@ const (
         "cloudformation:DescribeStackResources",
         "cloudformation:ListStackResources",
         "cloudformation:UpdateStack",
+        "cloudformation:DescribeStackEvents",
         "ec2:CreateTags",
         "ec2:DeleteTags",
         "ec2:AuthorizeSecurityGroupIngress",

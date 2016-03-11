@@ -81,11 +81,6 @@ func (s bastionStack) getStackParams() []*cloudformation.Parameter {
 			ParameterKey:   aws.String("AllowSSH"),
 			ParameterValue: aws.String(viper.GetString("cfnup-allow-ssh")),
 		})
-	} else {
-		params = append(params, &cloudformation.Parameter{
-			ParameterKey:     aws.String("AllowSSH"),
-			UsePreviousValue: aws.Bool(true),
-		})
 	}
 
 	return params
@@ -128,7 +123,7 @@ var bastionCFN = &cobra.Command{
 
 var bastionCFNUpdate = &cobra.Command{
 	Use:   "update [customer email|customer UUID]",
-	Short: "update CFN template on a customer bastion",
+	Short: "update CFN template for a customer's bastions",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return NewUserError("missing argument")
