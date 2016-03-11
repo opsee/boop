@@ -413,7 +413,7 @@ func init() {
 	viper.BindPFlag("verbose", flags.Lookup("verbose"))
 
 	bastionCmd.AddCommand(bastionListCmd)
-	flags := BoopCmd.Flags()
+	flags = BoopCmd.Flags()
 	flags.BoolP("active", "a", false, "list active only")
 	viper.BindPFlag("list-active", flags.Lookup("active"))
 
