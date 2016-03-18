@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	log "github.com/mborsuk/jwalterweatherman"
 	"github.com/opsee/boop/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -22,11 +21,6 @@ var regionList = []string{
 
 var BoopCmd = &cobra.Command{
 	Use: "boop",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if viper.GetBool("verbose") {
-			log.SetStdoutThreshold(log.LevelInfo)
-		}
-	},
 }
 
 func Execute() {

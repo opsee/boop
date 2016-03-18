@@ -2,7 +2,6 @@ package svc
 
 import (
 	"crypto/tls"
-	"github.com/aws/aws-sdk-go/aws/session"
 	log "github.com/mborsuk/jwalterweatherman"
 	"github.com/opsee/basic/schema"
 	opsee_aws_credentials "github.com/opsee/basic/schema/aws/credentials"
@@ -16,13 +15,13 @@ import (
 const tcpTimeout = time.Duration(3) * time.Second
 
 type OpseeServices struct {
-	vape       service.VapeClient
-	spanx      service.SpanxClient
-	keelhaul   service.KeelhaulClient
-	awsSession session.Session
+	vape     service.VapeClient
+	spanx    service.SpanxClient
+	keelhaul service.KeelhaulClient
+	//	awsSession session.Session
 }
 
-func (o OpseeServices) initVape() {
+func (o *OpseeServices) initVape() {
 	if o.vape != nil {
 		return
 	}
@@ -36,7 +35,7 @@ func (o OpseeServices) initVape() {
 	o.vape = service.NewVapeClient(conn)
 }
 
-func (o OpseeServices) initSpanx() {
+func (o *OpseeServices) initSpanx() {
 	if o.spanx != nil {
 		return
 	}
@@ -49,7 +48,7 @@ func (o OpseeServices) initSpanx() {
 	o.spanx = service.NewSpanxClient(conn)
 }
 
-func (o OpseeServices) initKeelhaul() {
+func (o *OpseeServices) initKeelhaul() {
 	if o.keelhaul != nil {
 		return
 	}
@@ -62,7 +61,7 @@ func (o OpseeServices) initKeelhaul() {
 	o.keelhaul = service.NewKeelhaulClient(conn)
 }
 
-func (o OpseeServices) GetRoleCreds(user *schema.User) (*opsee_aws_credentials.Value, error) {
+func (o *OpseeServices) GetRoleCreds(user *schema.User) (*opsee_aws_credentials.Value, error) {
 	o.initSpanx()
 
 	spanxResp, err := o.spanx.GetCredentials(context.Background(), &service.GetCredentialsRequest{
@@ -75,7 +74,7 @@ func (o OpseeServices) GetRoleCreds(user *schema.User) (*opsee_aws_credentials.V
 	return spanxResp.GetCredentials(), nil
 }
 
-func (o OpseeServices) GetBastionStates(customerIDs []string) ([]*schema.BastionState, error) {
+func (o *OpseeServices) GetBastionStates(customerIDs []string) ([]*schema.BastionState, error) {
 	o.initKeelhaul()
 
 	keelResp, err := o.keelhaul.ListBastionStates(context.Background(), &service.ListBastionStatesRequest{
@@ -88,7 +87,7 @@ func (o OpseeServices) GetBastionStates(customerIDs []string) ([]*schema.Bastion
 	return keelResp.GetBastionStates(), nil
 }
 
-func (o OpseeServices) GetUser(email string, custID string) (*schema.User, error) {
+func (o *OpseeServices) GetUser(email string, custID string) (*schema.User, error) {
 	o.initVape()
 
 	userResp, err := o.vape.GetUser(context.Background(), &service.GetUserRequest{

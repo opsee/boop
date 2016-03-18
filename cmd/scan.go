@@ -5,7 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	log "github.com/mborsuk/jwalterweatherman"
 	"github.com/opsee/boop/errors"
 	"github.com/opsee/boop/svc"
 	"github.com/opsee/boop/util"
@@ -30,7 +29,6 @@ var scanCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.INFO.Printf("user info: %s, %s, %s\n", u.Email, u.CustomerId, u.Name)
 
 		if !viper.IsSet("scan-region") {
 			return errors.NewUserError("required option not set: region")

@@ -47,6 +47,11 @@ var bastionListCmd = &cobra.Command{
 			return err
 		}
 
+		if viper.GetBool("verbose") {
+			log.SetStdoutThreshold(log.LevelInfo)
+		}
+		log.INFO.Printf("user info: %s, %s, %s\n", u.Email, u.CustomerId, u.Name)
+
 		yellow := color.New(color.FgYellow).SprintFunc()
 		blue := color.New(color.FgBlue).SprintFunc()
 		header := color.New(color.FgWhite).SprintFunc()
@@ -95,6 +100,10 @@ var bastionRestartCmd = &cobra.Command{
 			return err
 		}
 
+		if viper.GetBool("verbose") {
+			log.SetStdoutThreshold(log.LevelInfo)
+		}
+
 		bastionInstance, err := findBastionInstance(u, *bastionID, opseeServices)
 		if err != nil {
 			return err
@@ -134,6 +143,10 @@ var bastionTermCmd = &cobra.Command{
 		u, err := util.GetUserFromArgs(args, 0, opseeServices)
 		if err != nil {
 			return err
+		}
+
+		if viper.GetBool("verbose") {
+			log.SetStdoutThreshold(log.LevelInfo)
 		}
 
 		bastionInstance, err := findBastionInstance(u, *bastionID, opseeServices)
@@ -192,6 +205,10 @@ func findBastionInstance(user *schema.User, bastionID string, opseeServices *svc
 	var instance *ec2.Instance
 	var bastionRegion string
 	var ec2client *ec2.EC2
+
+	if viper.GetBool("verbose") {
+		log.SetStdoutThreshold(log.LevelInfo)
+	}
 
 	// TODO store bastion's region somewhere to avoid scanning
 RegionLoop:
