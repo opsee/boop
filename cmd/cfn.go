@@ -212,10 +212,6 @@ var cfnUpdate = &cobra.Command{
 			return err
 		}
 
-		if viper.GetBool("verbose") {
-			log.SetStdoutThreshold(log.LevelInfo)
-		}
-
 		stackName := "opsee-stack-" + u.CustomerId
 		stack, err := findStack(u, stackName, opseeServices)
 		if err != nil {
@@ -415,10 +411,6 @@ var cfnEvents = &cobra.Command{
 		u, err := util.GetUserFromArgs(args, 0, opseeServices)
 		if err != nil {
 			return err
-		}
-
-		if viper.GetBool("verbose") {
-			log.SetStdoutThreshold(log.LevelInfo)
 		}
 
 		stackName := "opsee-stack-" + u.CustomerId
