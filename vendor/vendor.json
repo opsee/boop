@@ -46,6 +46,22 @@
 			"path": "github.com/opsee/basic/service",
 			"revision": "a1c5ea41ed3c5a402bb6306aa30327db3c884931",
 			"revisionTime": "2016-03-01T09:43:51-08:00"
+		},
+		{
+			"path": "github.com/opsee/keelhaul/scanner",
+			"revision": ""
+		},
+		{
+			"path": "github.com/opsee/keelhaul/util",
+			"revision": ""
+		},
+		{
+			"path": "github.com/opsee/spanx/roler",
+			"revision": ""
+		},
+		{
+			"path": "github.com/opsee/spanx/store",
+			"revision": ""
 		}
 	]
 }
