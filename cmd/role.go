@@ -82,7 +82,9 @@ var roleCredsCommand = &cobra.Command{
 			return err
 		}
 
-		fmt.Printf("%s:%s:%s\n", *userCreds.AccessKeyID, *userCreds.SecretAccessKey, *userCreds.SessionToken)
+		fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", *userCreds.AccessKeyID)
+		fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", *userCreds.SecretAccessKey)
+		fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", *userCreds.SessionToken)
 
 		return nil
 	},
