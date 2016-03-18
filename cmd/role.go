@@ -10,7 +10,7 @@ import (
 	"github.com/opsee/boop/errors"
 	"github.com/opsee/boop/svc"
 	"github.com/opsee/boop/util"
-	"github.com/opsee/spanx/roler"
+	"github.com/opsee/spanx/policies"
 	"github.com/spf13/cobra"
 )
 
@@ -94,7 +94,7 @@ func (p opseePolicy) updateOpseeRolePolicy(client *iam.IAM) error {
 	_, err := client.PutRolePolicy(&iam.PutRolePolicyInput{
 		RoleName:       aws.String(p.Role),
 		PolicyName:     aws.String(p.Name),
-		PolicyDocument: aws.String(roler.Policy),
+		PolicyDocument: aws.String(policies.Policy),
 	})
 
 	return err
