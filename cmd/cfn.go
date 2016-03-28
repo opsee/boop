@@ -84,7 +84,7 @@ func (s cfnStack) getStackParams() []*cloudformation.Parameter {
 	if viper.IsSet("cfnup-allow-ssh") {
 		params = append(params, &cloudformation.Parameter{
 			ParameterKey:   aws.String("AllowSSH"),
-			ParameterValue: aws.String(viper.GetString("cfnup-allow-ssh")),
+			ParameterValue: aws.String("True"),
 		})
 	}
 
