@@ -60,23 +60,28 @@ var bastionListCmd = &cobra.Command{
 		w.Init(os.Stdout, 1, 0, 2, ' ', 0)
 
 		if len(bastionStates) > 0 {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", header("id"), "status",
-				header("last seen"), header("region"))
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", header("id"), "status",
+				header("last seen"), "region", header("instance id"), "instance state")
 		}
 
 		for _, b := range bastionStates {
 			reg := ""
+			instID := ""
+			instState := ""
 			if b.Status == "active" {
 				inst, err := findBastionInstance(u, b.Id, opseeServices)
 				if err != nil {
 					log.WARN.Printf("error finding bastion instance for %s\n", b.Id)
 				} else {
 					reg = inst.Region
+					instID = *inst.Instance.InstanceId
+					instState = *inst.Instance.State.Name
 				}
 			}
 
 			lastSeenDur := time.Since(time.Unix(b.LastSeen.Seconds, 0))
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", yellow(b.Id), b.Status, blue(roundDuration(lastSeenDur, time.Second)), reg)
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", yellow(b.Id), b.Status,
+				blue(roundDuration(lastSeenDur, time.Second)), reg, blue(instID), instState)
 		}
 		w.Flush()
 
@@ -238,7 +243,9 @@ RegionLoop:
 						if *tag.Value == bastionID {
 							instance = i
 							bastionRegion = region
-							break RegionLoop
+							if *i.State.Name == "running" {
+								break RegionLoop
+							}
 						}
 					}
 				}
