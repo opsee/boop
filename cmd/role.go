@@ -94,7 +94,7 @@ func (p opseePolicy) updateOpseeRolePolicy(client *iam.IAM) error {
 	_, err := client.PutRolePolicy(&iam.PutRolePolicyInput{
 		RoleName:       aws.String(p.Role),
 		PolicyName:     aws.String(p.Name),
-		PolicyDocument: aws.String(policies.Policy),
+		PolicyDocument: aws.String(policies.GetPolicy()),
 	})
 
 	return err

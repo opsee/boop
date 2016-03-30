@@ -86,6 +86,11 @@ func (s cfnStack) getStackParams() []*cloudformation.Parameter {
 			ParameterKey:   aws.String("AllowSSH"),
 			ParameterValue: aws.String("True"),
 		})
+	} else {
+		params = append(params, &cloudformation.Parameter{
+			ParameterKey:   aws.String("AllowSSH"),
+			ParameterValue: aws.String("False"),
+		})
 	}
 
 	return params
