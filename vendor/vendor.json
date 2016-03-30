@@ -393,12 +393,19 @@
 			"revisionTime": "2016-02-26T14:29:09-08:00"
 		},
 		{
+			"origin": "github.com/opsee/boop/vendor/github.com/opsee/spanx/policies",
+			"path": "github.com/opsee/spanx/policies",
+			"revision": "24498c63b60638638e23711a09564f62ddc6d245",
+			"revisionTime": "2016-03-29T12:54:54-07:00"
+		},
+		{
 			"path": "github.com/opsee/spanx/roler",
 			"revision": ""
 		},
 		{
 			"path": "github.com/opsee/spanx/store",
-			"revision": ""
+			"revision": "24498c63b60638638e23711a09564f62ddc6d245",
+			"revisionTime": "2016-03-29T12:54:54-07:00"
 		},
 		{
 			"path": "github.com/sirupsen/logrus",

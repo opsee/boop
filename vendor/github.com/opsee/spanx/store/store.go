@@ -6,7 +6,7 @@ import (
 
 type Store interface {
 	PutAccount(*com.Account) error
-	UpdateAccount(*com.Account) error
+	UpdateAccount(*com.Account, *com.Account) error
 	DeleteAccount(*com.Account) error
 
 	GetAccount(*GetAccountRequest) (*com.Account, error)

@@ -28,8 +28,25 @@ func (pg *Postgres) PutAccount(account *com.Account) error {
 	return pg.putAccount(pg.db, account)
 }
 
-func (pg *Postgres) UpdateAccount(account *com.Account) error {
-	return pg.updateAccount(pg.db, account)
+func (pg *Postgres) UpdateAccount(oldAccount *com.Account, account *com.Account) error {
+	tx, err := pg.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	err = pg.deleteAccount(tx, oldAccount)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = pg.putAccount(tx, account)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (pg *Postgres) DeleteAccount(account *com.Account) error {
