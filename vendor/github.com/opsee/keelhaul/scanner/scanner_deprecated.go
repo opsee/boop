@@ -4,13 +4,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/opsee/basic/schema"
-	opsee_aws "github.com/opsee/basic/schema/aws"
+	"github.com/opsee/basic/com"
+	"github.com/opsee/keelhaul/util"
 	"net"
 	"sort"
 )
 
-func ScanRegion(region string, session *session.Session) (*schema.Region, error) {
+func ScanRegionDeprecated(region string, session *session.Session) (*com.Region, error) {
 	ec2Client := ec2.New(session)
 
 	var (
@@ -91,12 +91,16 @@ func ScanRegion(region string, session *session.Session) (*schema.Region, error)
 		return nil, err
 	}
 
-	vpcs := make([]*schema.Vpc, len(vpcOutput.Vpcs))
+	vpcs := make([]*com.VPC, len(vpcOutput.Vpcs))
 	for vi, v := range vpcOutput.Vpcs {
-		vpc := &schema.Vpc{}
-		opsee_aws.CopyInto(vpc, v)
+		tags := make([]*com.Tag, len(v.Tags))
+		copyTags(tags, v.Tags)
 
-		vpc.InstanceCount = int32(vpcCounts[vpc.VpcId])
+		vpc := &com.VPC{}
+		util.Copy(vpc, v)
+
+		vpc.Tags = tags
+		vpc.InstanceCount = vpcCounts[aws.StringValue(vpc.VpcId)]
 		vpcs[vi] = vpc
 	}
 
@@ -105,14 +109,18 @@ func ScanRegion(region string, session *session.Session) (*schema.Region, error)
 		return nil, err
 	}
 
-	subnets := make([]*schema.Subnet, len(subnetOutput.Subnets))
+	subnets := make([]*com.Subnet, len(subnetOutput.Subnets))
 	for si, s := range subnetOutput.Subnets {
-		subnet := &schema.Subnet{}
-		opsee_aws.CopyInto(subnet, s)
+		tags := make([]*com.Tag, len(s.Tags))
+		copyTags(tags, s.Tags)
 
-		subnet.InstanceCount = int32(subnetCounts[subnet.SubnetId])
+		subnet := &com.Subnet{}
+		util.Copy(subnet, s)
 
-		routing, err := determineRouting(s, vpcRouteTables[aws.StringValue(s.VpcId)], vpcIPs[aws.StringValue(s.VpcId)], vpcGateways[aws.StringValue(s.VpcId)])
+		subnet.Tags = tags
+		subnet.InstanceCount = subnetCounts[aws.StringValue(subnet.SubnetId)]
+
+		routing, err := determineRoutingDeprecated(s, vpcRouteTables[aws.StringValue(s.VpcId)], vpcIPs[aws.StringValue(s.VpcId)], vpcGateways[aws.StringValue(s.VpcId)])
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +130,7 @@ func ScanRegion(region string, session *session.Session) (*schema.Region, error)
 	}
 
 	// now sort them in the order we want to select for bastion install
-	sort.Sort(schema.SubnetsByPreference(subnets))
+	sort.Sort(com.SubnetsByPreference(subnets))
 
 	accountOutput, err := ec2Client.DescribeAccountAttributes(&ec2.DescribeAccountAttributesInput{
 		AttributeNames: []*string{
@@ -133,24 +141,24 @@ func ScanRegion(region string, session *session.Session) (*schema.Region, error)
 		return nil, err
 	}
 
-	var supportedPlatforms []string
+	supportedPlatforms := make([]*string, 0)
 	for _, a := range accountOutput.AccountAttributes {
 		if aws.StringValue(a.AttributeName) == "supported-platforms" {
 			for _, v := range a.AttributeValues {
-				supportedPlatforms = append(supportedPlatforms, aws.StringValue(v.AttributeValue))
+				supportedPlatforms = append(supportedPlatforms, v.AttributeValue)
 			}
 		}
 	}
 
-	return &schema.Region{
+	return &com.Region{
 		Region:             region,
 		SupportedPlatforms: supportedPlatforms,
-		Vpcs:               vpcs,
+		VPCs:               vpcs,
 		Subnets:            subnets,
 	}, nil
 }
 
-func determineRouting(subnet *ec2.Subnet, routeTables []*ec2.RouteTable, instanceIPs []string, gateways []*ec2.InternetGateway) (string, error) {
+func determineRoutingDeprecated(subnet *ec2.Subnet, routeTables []*ec2.RouteTable, instanceIPs []string, gateways []*ec2.InternetGateway) (string, error) {
 	var (
 		associatedTable *ec2.RouteTable
 		mainTable       *ec2.RouteTable
@@ -177,7 +185,7 @@ func determineRouting(subnet *ec2.Subnet, routeTables []*ec2.RouteTable, instanc
 
 	// there is no main table or associated tables, so who knows what is going on
 	if associatedTable == nil {
-		return schema.RoutingStatePrivate, nil
+		return com.RoutingStatePrivate, nil
 	}
 
 	for _, route := range associatedTable.Routes {
@@ -200,7 +208,7 @@ func determineRouting(subnet *ec2.Subnet, routeTables []*ec2.RouteTable, instanc
 	// no route to 0.0.0.0/0, so we're private. no need to check if
 	// we have a route to other instances
 	if internetRoute == nil {
-		return schema.RoutingStatePrivate, nil
+		return com.RoutingStatePrivate, nil
 	}
 
 	// TODO: scan network ACLs here? YES. going to push this out first tho
@@ -222,13 +230,13 @@ func determineRouting(subnet *ec2.Subnet, routeTables []*ec2.RouteTable, instanc
 	// we must not be able to reach all the instance ips,
 	// so we're going to mark this subnet as occluded
 	if len(routeToIPs) < len(instanceIPs) {
-		return schema.RoutingStateOccluded, nil
+		return com.RoutingStateOccluded, nil
 	}
 
 	// nat. pretty straightforward i guess,
 	// going to punt on verifying that the nat instance itself has a route?
 	if internetRoute.InstanceId != nil {
-		return schema.RoutingStateNAT, nil
+		return com.RoutingStateNAT, nil
 	}
 
 	// public _or_ routing through a customer gateway, in which case we'll consider it NAT,
@@ -236,13 +244,22 @@ func determineRouting(subnet *ec2.Subnet, routeTables []*ec2.RouteTable, instanc
 	if internetRoute.GatewayId != nil {
 		for _, igw := range gateways {
 			if aws.StringValue(internetRoute.GatewayId) == aws.StringValue(igw.InternetGatewayId) {
-				return schema.RoutingStatePublic, nil
+				return com.RoutingStatePublic, nil
 			}
 		}
 
-		return schema.RoutingStateGateway, nil
+		return com.RoutingStateGateway, nil
 	}
 
 	// we're in a weird state. the routing table is possibly attached to an eni, but not an instance
-	return schema.RoutingStateOccluded, nil
+	return com.RoutingStateOccluded, nil
+}
+
+func copyTags(tags []*com.Tag, eTags []*ec2.Tag) {
+	for i, t := range eTags {
+		tags[i] = &com.Tag{
+			Key:   t.Key,
+			Value: t.Value,
+		}
+	}
 }
