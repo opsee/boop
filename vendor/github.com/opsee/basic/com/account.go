@@ -7,7 +7,9 @@ import (
 
 type Account struct {
 	ID         int       `json:"id" db:"id"`
+	ExternalID string    `json:"external_id" db:"external_id"`
 	CustomerID string    `json:"customer_id" db:"customer_id"`
+	RoleARN    string    `json:"role_arn" db:"role_arn"`
 	Active     bool      `json:"active" db:"active"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
@@ -21,7 +23,7 @@ func (a *Account) PolicyName() string {
 	return fmt.Sprintf("opsee-policy-%s", a.CustomerID)
 }
 
-func (a *Account) RoleARN() string {
+func (a *Account) ComputedRoleARN() string {
 	return fmt.Sprintf("arn:aws:iam::%012d:role/%s", a.ID, a.RoleName())
 }
 
