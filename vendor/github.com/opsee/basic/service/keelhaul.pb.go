@@ -9,8 +9,8 @@ import fmt "fmt"
 import math "math"
 import _ "github.com/opsee/protobuf/opseeproto"
 import _ "github.com/opsee/protobuf/opseeproto/types"
+import opsee "github.com/opsee/basic/schema"
 import opsee1 "github.com/opsee/basic/schema"
-import opsee2 "github.com/opsee/basic/schema"
 import opsee3 "github.com/opsee/basic/schema"
 import _ "github.com/opsee/basic/schema/aws/ec2"
 
@@ -21,28 +21,52 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
+import io "io"
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-type ListBastionStatesRequest struct {
-	CustomerIds []string `protobuf:"bytes,1,rep,name=customer_ids" json:"customer_ids,omitempty"`
+type Filter struct {
+	Key   string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *ListBastionStatesRequest) Reset()         { *m = ListBastionStatesRequest{} }
-func (m *ListBastionStatesRequest) String() string { return proto.CompactTextString(m) }
-func (*ListBastionStatesRequest) ProtoMessage()    {}
+func (m *Filter) Reset()                    { *m = Filter{} }
+func (m *Filter) String() string            { return proto.CompactTextString(m) }
+func (*Filter) ProtoMessage()               {}
+func (*Filter) Descriptor() ([]byte, []int) { return fileDescriptorKeelhaul, []int{0} }
+
+type ListBastionStatesRequest struct {
+	CustomerIds []string  `protobuf:"bytes,1,rep,name=customer_ids,json=customerIds" json:"customer_ids,omitempty"`
+	Filters     []*Filter `protobuf:"bytes,2,rep,name=filters" json:"filters,omitempty"`
+}
+
+func (m *ListBastionStatesRequest) Reset()                    { *m = ListBastionStatesRequest{} }
+func (m *ListBastionStatesRequest) String() string            { return proto.CompactTextString(m) }
+func (*ListBastionStatesRequest) ProtoMessage()               {}
+func (*ListBastionStatesRequest) Descriptor() ([]byte, []int) { return fileDescriptorKeelhaul, []int{1} }
+
+func (m *ListBastionStatesRequest) GetFilters() []*Filter {
+	if m != nil {
+		return m.Filters
+	}
+	return nil
+}
 
 type ListBastionStatesResponse struct {
-	BastionStates []*opsee1.BastionState `protobuf:"bytes,1,rep,name=bastion_states" json:"bastion_states,omitempty"`
+	BastionStates []*opsee.BastionState `protobuf:"bytes,1,rep,name=bastion_states,json=bastionStates" json:"bastion_states,omitempty"`
 }
 
 func (m *ListBastionStatesResponse) Reset()         { *m = ListBastionStatesResponse{} }
 func (m *ListBastionStatesResponse) String() string { return proto.CompactTextString(m) }
 func (*ListBastionStatesResponse) ProtoMessage()    {}
+func (*ListBastionStatesResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorKeelhaul, []int{2}
+}
 
-func (m *ListBastionStatesResponse) GetBastionStates() []*opsee1.BastionState {
+func (m *ListBastionStatesResponse) GetBastionStates() []*opsee.BastionState {
 	if m != nil {
 		return m.BastionStates
 	}
@@ -50,17 +74,16 @@ func (m *ListBastionStatesResponse) GetBastionStates() []*opsee1.BastionState {
 }
 
 type ScanVpcsRequest struct {
-	User      *opsee2.User `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
-	AccessKey string       `protobuf:"bytes,2,opt,name=access_key,proto3" json:"access_key,omitempty"`
-	SecretKey string       `protobuf:"bytes,3,opt,name=secret_key,proto3" json:"secret_key,omitempty"`
-	Region    string       `protobuf:"bytes,4,opt,name=region,proto3" json:"region,omitempty"`
+	User   *opsee1.User `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
+	Region string       `protobuf:"bytes,4,opt,name=region,proto3" json:"region,omitempty"`
 }
 
-func (m *ScanVpcsRequest) Reset()         { *m = ScanVpcsRequest{} }
-func (m *ScanVpcsRequest) String() string { return proto.CompactTextString(m) }
-func (*ScanVpcsRequest) ProtoMessage()    {}
+func (m *ScanVpcsRequest) Reset()                    { *m = ScanVpcsRequest{} }
+func (m *ScanVpcsRequest) String() string            { return proto.CompactTextString(m) }
+func (*ScanVpcsRequest) ProtoMessage()               {}
+func (*ScanVpcsRequest) Descriptor() ([]byte, []int) { return fileDescriptorKeelhaul, []int{3} }
 
-func (m *ScanVpcsRequest) GetUser() *opsee2.User {
+func (m *ScanVpcsRequest) GetUser() *opsee1.User {
 	if m != nil {
 		return m.User
 	}
@@ -71,9 +94,10 @@ type ScanVpcsResponse struct {
 	Region *opsee3.Region `protobuf:"bytes,1,opt,name=region" json:"region,omitempty"`
 }
 
-func (m *ScanVpcsResponse) Reset()         { *m = ScanVpcsResponse{} }
-func (m *ScanVpcsResponse) String() string { return proto.CompactTextString(m) }
-func (*ScanVpcsResponse) ProtoMessage()    {}
+func (m *ScanVpcsResponse) Reset()                    { *m = ScanVpcsResponse{} }
+func (m *ScanVpcsResponse) String() string            { return proto.CompactTextString(m) }
+func (*ScanVpcsResponse) ProtoMessage()               {}
+func (*ScanVpcsResponse) Descriptor() ([]byte, []int) { return fileDescriptorKeelhaul, []int{4} }
 
 func (m *ScanVpcsResponse) GetRegion() *opsee3.Region {
 	if m != nil {
@@ -83,20 +107,20 @@ func (m *ScanVpcsResponse) GetRegion() *opsee3.Region {
 }
 
 type LaunchStackRequest struct {
-	User         *opsee2.User `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
-	AccessKey    string       `protobuf:"bytes,2,opt,name=access_key,proto3" json:"access_key,omitempty"`
-	SecretKey    string       `protobuf:"bytes,3,opt,name=secret_key,proto3" json:"secret_key,omitempty"`
-	Region       string       `protobuf:"bytes,4,opt,name=region,proto3" json:"region,omitempty"`
-	VpcId        string       `protobuf:"bytes,5,opt,name=vpc_id,proto3" json:"vpc_id,omitempty"`
-	SubnetId     string       `protobuf:"bytes,6,opt,name=subnet_id,proto3" json:"subnet_id,omitempty"`
-	InstanceSize string       `protobuf:"bytes,7,opt,name=instance_size,proto3" json:"instance_size,omitempty"`
+	User          *opsee1.User `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
+	Region        string       `protobuf:"bytes,4,opt,name=region,proto3" json:"region,omitempty"`
+	VpcId         string       `protobuf:"bytes,5,opt,name=vpc_id,json=vpcId,proto3" json:"vpc_id,omitempty"`
+	SubnetId      string       `protobuf:"bytes,6,opt,name=subnet_id,json=subnetId,proto3" json:"subnet_id,omitempty"`
+	InstanceSize  string       `protobuf:"bytes,7,opt,name=instance_size,json=instanceSize,proto3" json:"instance_size,omitempty"`
+	SubnetRouting string       `protobuf:"bytes,8,opt,name=subnet_routing,json=subnetRouting,proto3" json:"subnet_routing,omitempty"`
 }
 
-func (m *LaunchStackRequest) Reset()         { *m = LaunchStackRequest{} }
-func (m *LaunchStackRequest) String() string { return proto.CompactTextString(m) }
-func (*LaunchStackRequest) ProtoMessage()    {}
+func (m *LaunchStackRequest) Reset()                    { *m = LaunchStackRequest{} }
+func (m *LaunchStackRequest) String() string            { return proto.CompactTextString(m) }
+func (*LaunchStackRequest) ProtoMessage()               {}
+func (*LaunchStackRequest) Descriptor() ([]byte, []int) { return fileDescriptorKeelhaul, []int{5} }
 
-func (m *LaunchStackRequest) GetUser() *opsee2.User {
+func (m *LaunchStackRequest) GetUser() *opsee1.User {
 	if m != nil {
 		return m.User
 	}
@@ -104,12 +128,13 @@ func (m *LaunchStackRequest) GetUser() *opsee2.User {
 }
 
 type LaunchStackResponse struct {
-	StackId string `protobuf:"bytes,1,opt,name=stack_id,proto3" json:"stack_id,omitempty"`
+	StackId string `protobuf:"bytes,1,opt,name=stack_id,json=stackId,proto3" json:"stack_id,omitempty"`
 }
 
-func (m *LaunchStackResponse) Reset()         { *m = LaunchStackResponse{} }
-func (m *LaunchStackResponse) String() string { return proto.CompactTextString(m) }
-func (*LaunchStackResponse) ProtoMessage()    {}
+func (m *LaunchStackResponse) Reset()                    { *m = LaunchStackResponse{} }
+func (m *LaunchStackResponse) String() string            { return proto.CompactTextString(m) }
+func (*LaunchStackResponse) ProtoMessage()               {}
+func (*LaunchStackResponse) Descriptor() ([]byte, []int) { return fileDescriptorKeelhaul, []int{6} }
 
 type AuthenticateBastionRequest struct {
 	Id       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -119,6 +144,9 @@ type AuthenticateBastionRequest struct {
 func (m *AuthenticateBastionRequest) Reset()         { *m = AuthenticateBastionRequest{} }
 func (m *AuthenticateBastionRequest) String() string { return proto.CompactTextString(m) }
 func (*AuthenticateBastionRequest) ProtoMessage()    {}
+func (*AuthenticateBastionRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorKeelhaul, []int{7}
+}
 
 type AuthenticateBastionResponse struct {
 	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -127,8 +155,12 @@ type AuthenticateBastionResponse struct {
 func (m *AuthenticateBastionResponse) Reset()         { *m = AuthenticateBastionResponse{} }
 func (m *AuthenticateBastionResponse) String() string { return proto.CompactTextString(m) }
 func (*AuthenticateBastionResponse) ProtoMessage()    {}
+func (*AuthenticateBastionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorKeelhaul, []int{8}
+}
 
 func init() {
+	proto.RegisterType((*Filter)(nil), "opsee.Filter")
 	proto.RegisterType((*ListBastionStatesRequest)(nil), "opsee.ListBastionStatesRequest")
 	proto.RegisterType((*ListBastionStatesResponse)(nil), "opsee.ListBastionStatesResponse")
 	proto.RegisterType((*ScanVpcsRequest)(nil), "opsee.ScanVpcsRequest")
@@ -137,6 +169,39 @@ func init() {
 	proto.RegisterType((*LaunchStackResponse)(nil), "opsee.LaunchStackResponse")
 	proto.RegisterType((*AuthenticateBastionRequest)(nil), "opsee.AuthenticateBastionRequest")
 	proto.RegisterType((*AuthenticateBastionResponse)(nil), "opsee.AuthenticateBastionResponse")
+}
+func (this *Filter) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Filter)
+	if !ok {
+		that2, ok := that.(Filter)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Key != that1.Key {
+		return false
+	}
+	if this.Value != that1.Value {
+		return false
+	}
+	return true
 }
 func (this *ListBastionStatesRequest) Equal(that interface{}) bool {
 	if that == nil {
@@ -168,6 +233,14 @@ func (this *ListBastionStatesRequest) Equal(that interface{}) bool {
 	}
 	for i := range this.CustomerIds {
 		if this.CustomerIds[i] != that1.CustomerIds[i] {
+			return false
+		}
+	}
+	if len(this.Filters) != len(that1.Filters) {
+		return false
+	}
+	for i := range this.Filters {
+		if !this.Filters[i].Equal(that1.Filters[i]) {
 			return false
 		}
 	}
@@ -236,12 +309,6 @@ func (this *ScanVpcsRequest) Equal(that interface{}) bool {
 	if !this.User.Equal(that1.User) {
 		return false
 	}
-	if this.AccessKey != that1.AccessKey {
-		return false
-	}
-	if this.SecretKey != that1.SecretKey {
-		return false
-	}
 	if this.Region != that1.Region {
 		return false
 	}
@@ -305,12 +372,6 @@ func (this *LaunchStackRequest) Equal(that interface{}) bool {
 	if !this.User.Equal(that1.User) {
 		return false
 	}
-	if this.AccessKey != that1.AccessKey {
-		return false
-	}
-	if this.SecretKey != that1.SecretKey {
-		return false
-	}
 	if this.Region != that1.Region {
 		return false
 	}
@@ -321,6 +382,9 @@ func (this *LaunchStackRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if this.InstanceSize != that1.InstanceSize {
+		return false
+	}
+	if this.SubnetRouting != that1.SubnetRouting {
 		return false
 	}
 	return true
@@ -419,6 +483,12 @@ func (this *AuthenticateBastionResponse) Equal(that interface{}) bool {
 	return true
 }
 
+type FilterGetter interface {
+	GetFilter() *Filter
+}
+
+var GraphQLFilterType *github_com_graphql_go_graphql.Object
+
 type ListBastionStatesRequestGetter interface {
 	GetListBastionStatesRequest() *ListBastionStatesRequest
 }
@@ -468,6 +538,52 @@ type AuthenticateBastionResponseGetter interface {
 var GraphQLAuthenticateBastionResponseType *github_com_graphql_go_graphql.Object
 
 func init() {
+	GraphQLFilterType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
+		Name:        "serviceFilter",
+		Description: "",
+		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
+			return github_com_graphql_go_graphql.Fields{
+				"key": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*Filter)
+						if ok {
+							return obj.Key, nil
+						}
+						inter, ok := p.Source.(FilterGetter)
+						if ok {
+							face := inter.GetFilter()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Key, nil
+						}
+						return nil, fmt.Errorf("field key not resolved")
+					},
+				},
+				"value": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*Filter)
+						if ok {
+							return obj.Value, nil
+						}
+						inter, ok := p.Source.(FilterGetter)
+						if ok {
+							face := inter.GetFilter()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Value, nil
+						}
+						return nil, fmt.Errorf("field value not resolved")
+					},
+				},
+			}
+		}),
+	})
 	GraphQLListBastionStatesRequestType = github_com_graphql_go_graphql.NewObject(github_com_graphql_go_graphql.ObjectConfig{
 		Name:        "serviceListBastionStatesRequest",
 		Description: "",
@@ -492,6 +608,25 @@ func init() {
 						return nil, fmt.Errorf("field customer_ids not resolved")
 					},
 				},
+				"filters": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.NewList(GraphQLFilterType),
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*ListBastionStatesRequest)
+						if ok {
+							return obj.Filters, nil
+						}
+						inter, ok := p.Source.(ListBastionStatesRequestGetter)
+						if ok {
+							face := inter.GetListBastionStatesRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.Filters, nil
+						}
+						return nil, fmt.Errorf("field filters not resolved")
+					},
+				},
 			}
 		}),
 	})
@@ -501,7 +636,7 @@ func init() {
 		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
 			return github_com_graphql_go_graphql.Fields{
 				"bastion_states": &github_com_graphql_go_graphql.Field{
-					Type:        github_com_graphql_go_graphql.NewList(opsee1.GraphQLBastionStateType),
+					Type:        github_com_graphql_go_graphql.NewList(opsee.GraphQLBastionStateType),
 					Description: "",
 					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
 						obj, ok := p.Source.(*ListBastionStatesResponse)
@@ -528,7 +663,7 @@ func init() {
 		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
 			return github_com_graphql_go_graphql.Fields{
 				"user": &github_com_graphql_go_graphql.Field{
-					Type:        opsee2.GraphQLUserType,
+					Type:        opsee1.GraphQLUserType,
 					Description: "",
 					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
 						obj, ok := p.Source.(*ScanVpcsRequest)
@@ -550,44 +685,6 @@ func init() {
 							return face.GetUser(), nil
 						}
 						return nil, fmt.Errorf("field user not resolved")
-					},
-				},
-				"access_key": &github_com_graphql_go_graphql.Field{
-					Type:        github_com_graphql_go_graphql.String,
-					Description: "",
-					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
-						obj, ok := p.Source.(*ScanVpcsRequest)
-						if ok {
-							return obj.AccessKey, nil
-						}
-						inter, ok := p.Source.(ScanVpcsRequestGetter)
-						if ok {
-							face := inter.GetScanVpcsRequest()
-							if face == nil {
-								return nil, nil
-							}
-							return face.AccessKey, nil
-						}
-						return nil, fmt.Errorf("field access_key not resolved")
-					},
-				},
-				"secret_key": &github_com_graphql_go_graphql.Field{
-					Type:        github_com_graphql_go_graphql.String,
-					Description: "",
-					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
-						obj, ok := p.Source.(*ScanVpcsRequest)
-						if ok {
-							return obj.SecretKey, nil
-						}
-						inter, ok := p.Source.(ScanVpcsRequestGetter)
-						if ok {
-							face := inter.GetScanVpcsRequest()
-							if face == nil {
-								return nil, nil
-							}
-							return face.SecretKey, nil
-						}
-						return nil, fmt.Errorf("field secret_key not resolved")
 					},
 				},
 				"region": &github_com_graphql_go_graphql.Field{
@@ -651,7 +748,7 @@ func init() {
 		Fields: (github_com_graphql_go_graphql.FieldsThunk)(func() github_com_graphql_go_graphql.Fields {
 			return github_com_graphql_go_graphql.Fields{
 				"user": &github_com_graphql_go_graphql.Field{
-					Type:        opsee2.GraphQLUserType,
+					Type:        opsee1.GraphQLUserType,
 					Description: "",
 					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
 						obj, ok := p.Source.(*LaunchStackRequest)
@@ -673,44 +770,6 @@ func init() {
 							return face.GetUser(), nil
 						}
 						return nil, fmt.Errorf("field user not resolved")
-					},
-				},
-				"access_key": &github_com_graphql_go_graphql.Field{
-					Type:        github_com_graphql_go_graphql.String,
-					Description: "",
-					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
-						obj, ok := p.Source.(*LaunchStackRequest)
-						if ok {
-							return obj.AccessKey, nil
-						}
-						inter, ok := p.Source.(LaunchStackRequestGetter)
-						if ok {
-							face := inter.GetLaunchStackRequest()
-							if face == nil {
-								return nil, nil
-							}
-							return face.AccessKey, nil
-						}
-						return nil, fmt.Errorf("field access_key not resolved")
-					},
-				},
-				"secret_key": &github_com_graphql_go_graphql.Field{
-					Type:        github_com_graphql_go_graphql.String,
-					Description: "",
-					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
-						obj, ok := p.Source.(*LaunchStackRequest)
-						if ok {
-							return obj.SecretKey, nil
-						}
-						inter, ok := p.Source.(LaunchStackRequestGetter)
-						if ok {
-							face := inter.GetLaunchStackRequest()
-							if face == nil {
-								return nil, nil
-							}
-							return face.SecretKey, nil
-						}
-						return nil, fmt.Errorf("field secret_key not resolved")
 					},
 				},
 				"region": &github_com_graphql_go_graphql.Field{
@@ -787,6 +846,25 @@ func init() {
 							return face.InstanceSize, nil
 						}
 						return nil, fmt.Errorf("field instance_size not resolved")
+					},
+				},
+				"subnet_routing": &github_com_graphql_go_graphql.Field{
+					Type:        github_com_graphql_go_graphql.String,
+					Description: "",
+					Resolve: func(p github_com_graphql_go_graphql.ResolveParams) (interface{}, error) {
+						obj, ok := p.Source.(*LaunchStackRequest)
+						if ok {
+							return obj.SubnetRouting, nil
+						}
+						inter, ok := p.Source.(LaunchStackRequestGetter)
+						if ok {
+							face := inter.GetLaunchStackRequest()
+							if face == nil {
+								return nil, nil
+							}
+							return face.SubnetRouting, nil
+						}
+						return nil, fmt.Errorf("field subnet_routing not resolved")
 					},
 				},
 			}
@@ -1036,12 +1114,362 @@ var _Keelhaul_serviceDesc = grpc.ServiceDesc{
 	Streams: []grpc.StreamDesc{},
 }
 
+func (m *Filter) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Filter) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Key) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.Key)))
+		i += copy(data[i:], m.Key)
+	}
+	if len(m.Value) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.Value)))
+		i += copy(data[i:], m.Value)
+	}
+	return i, nil
+}
+
+func (m *ListBastionStatesRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ListBastionStatesRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.CustomerIds) > 0 {
+		for _, s := range m.CustomerIds {
+			data[i] = 0xa
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	if len(m.Filters) > 0 {
+		for _, msg := range m.Filters {
+			data[i] = 0x12
+			i++
+			i = encodeVarintKeelhaul(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *ListBastionStatesResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ListBastionStatesResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.BastionStates) > 0 {
+		for _, msg := range m.BastionStates {
+			data[i] = 0xa
+			i++
+			i = encodeVarintKeelhaul(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *ScanVpcsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ScanVpcsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.User != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(m.User.Size()))
+		n1, err := m.User.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	if len(m.Region) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.Region)))
+		i += copy(data[i:], m.Region)
+	}
+	return i, nil
+}
+
+func (m *ScanVpcsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ScanVpcsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Region != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(m.Region.Size()))
+		n2, err := m.Region.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	return i, nil
+}
+
+func (m *LaunchStackRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *LaunchStackRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.User != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(m.User.Size()))
+		n3, err := m.User.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if len(m.Region) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.Region)))
+		i += copy(data[i:], m.Region)
+	}
+	if len(m.VpcId) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.VpcId)))
+		i += copy(data[i:], m.VpcId)
+	}
+	if len(m.SubnetId) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.SubnetId)))
+		i += copy(data[i:], m.SubnetId)
+	}
+	if len(m.InstanceSize) > 0 {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.InstanceSize)))
+		i += copy(data[i:], m.InstanceSize)
+	}
+	if len(m.SubnetRouting) > 0 {
+		data[i] = 0x42
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.SubnetRouting)))
+		i += copy(data[i:], m.SubnetRouting)
+	}
+	return i, nil
+}
+
+func (m *LaunchStackResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *LaunchStackResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.StackId) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.StackId)))
+		i += copy(data[i:], m.StackId)
+	}
+	return i, nil
+}
+
+func (m *AuthenticateBastionRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *AuthenticateBastionRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Id) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.Id)))
+		i += copy(data[i:], m.Id)
+	}
+	if len(m.Password) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintKeelhaul(data, i, uint64(len(m.Password)))
+		i += copy(data[i:], m.Password)
+	}
+	return i, nil
+}
+
+func (m *AuthenticateBastionResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *AuthenticateBastionResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Success {
+		data[i] = 0x8
+		i++
+		if m.Success {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	return i, nil
+}
+
+func encodeFixed64Keelhaul(data []byte, offset int, v uint64) int {
+	data[offset] = uint8(v)
+	data[offset+1] = uint8(v >> 8)
+	data[offset+2] = uint8(v >> 16)
+	data[offset+3] = uint8(v >> 24)
+	data[offset+4] = uint8(v >> 32)
+	data[offset+5] = uint8(v >> 40)
+	data[offset+6] = uint8(v >> 48)
+	data[offset+7] = uint8(v >> 56)
+	return offset + 8
+}
+func encodeFixed32Keelhaul(data []byte, offset int, v uint32) int {
+	data[offset] = uint8(v)
+	data[offset+1] = uint8(v >> 8)
+	data[offset+2] = uint8(v >> 16)
+	data[offset+3] = uint8(v >> 24)
+	return offset + 4
+}
+func encodeVarintKeelhaul(data []byte, offset int, v uint64) int {
+	for v >= 1<<7 {
+		data[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	data[offset] = uint8(v)
+	return offset + 1
+}
+func NewPopulatedFilter(r randyKeelhaul, easy bool) *Filter {
+	this := &Filter{}
+	this.Key = randStringKeelhaul(r)
+	this.Value = randStringKeelhaul(r)
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
 func NewPopulatedListBastionStatesRequest(r randyKeelhaul, easy bool) *ListBastionStatesRequest {
 	this := &ListBastionStatesRequest{}
 	v1 := r.Intn(10)
 	this.CustomerIds = make([]string, v1)
 	for i := 0; i < v1; i++ {
 		this.CustomerIds[i] = randStringKeelhaul(r)
+	}
+	if r.Intn(10) != 0 {
+		v2 := r.Intn(5)
+		this.Filters = make([]*Filter, v2)
+		for i := 0; i < v2; i++ {
+			this.Filters[i] = NewPopulatedFilter(r, easy)
+		}
 	}
 	if !easy && r.Intn(10) != 0 {
 	}
@@ -1051,10 +1479,10 @@ func NewPopulatedListBastionStatesRequest(r randyKeelhaul, easy bool) *ListBasti
 func NewPopulatedListBastionStatesResponse(r randyKeelhaul, easy bool) *ListBastionStatesResponse {
 	this := &ListBastionStatesResponse{}
 	if r.Intn(10) != 0 {
-		v2 := r.Intn(5)
-		this.BastionStates = make([]*opsee1.BastionState, v2)
-		for i := 0; i < v2; i++ {
-			this.BastionStates[i] = opsee1.NewPopulatedBastionState(r, easy)
+		v3 := r.Intn(5)
+		this.BastionStates = make([]*opsee.BastionState, v3)
+		for i := 0; i < v3; i++ {
+			this.BastionStates[i] = opsee.NewPopulatedBastionState(r, easy)
 		}
 	}
 	if !easy && r.Intn(10) != 0 {
@@ -1065,10 +1493,8 @@ func NewPopulatedListBastionStatesResponse(r randyKeelhaul, easy bool) *ListBast
 func NewPopulatedScanVpcsRequest(r randyKeelhaul, easy bool) *ScanVpcsRequest {
 	this := &ScanVpcsRequest{}
 	if r.Intn(10) != 0 {
-		this.User = opsee2.NewPopulatedUser(r, easy)
+		this.User = opsee1.NewPopulatedUser(r, easy)
 	}
-	this.AccessKey = randStringKeelhaul(r)
-	this.SecretKey = randStringKeelhaul(r)
 	this.Region = randStringKeelhaul(r)
 	if !easy && r.Intn(10) != 0 {
 	}
@@ -1077,7 +1503,7 @@ func NewPopulatedScanVpcsRequest(r randyKeelhaul, easy bool) *ScanVpcsRequest {
 
 func NewPopulatedScanVpcsResponse(r randyKeelhaul, easy bool) *ScanVpcsResponse {
 	this := &ScanVpcsResponse{}
-	if r.Intn(10) == 0 {
+	if r.Intn(10) != 0 {
 		this.Region = opsee3.NewPopulatedRegion(r, easy)
 	}
 	if !easy && r.Intn(10) != 0 {
@@ -1088,14 +1514,13 @@ func NewPopulatedScanVpcsResponse(r randyKeelhaul, easy bool) *ScanVpcsResponse 
 func NewPopulatedLaunchStackRequest(r randyKeelhaul, easy bool) *LaunchStackRequest {
 	this := &LaunchStackRequest{}
 	if r.Intn(10) != 0 {
-		this.User = opsee2.NewPopulatedUser(r, easy)
+		this.User = opsee1.NewPopulatedUser(r, easy)
 	}
-	this.AccessKey = randStringKeelhaul(r)
-	this.SecretKey = randStringKeelhaul(r)
 	this.Region = randStringKeelhaul(r)
 	this.VpcId = randStringKeelhaul(r)
 	this.SubnetId = randStringKeelhaul(r)
 	this.InstanceSize = randStringKeelhaul(r)
+	this.SubnetRouting = randStringKeelhaul(r)
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this
@@ -1145,9 +1570,9 @@ func randUTF8RuneKeelhaul(r randyKeelhaul) rune {
 	return rune(ru + 61)
 }
 func randStringKeelhaul(r randyKeelhaul) string {
-	v3 := r.Intn(100)
-	tmps := make([]rune, v3)
-	for i := 0; i < v3; i++ {
+	v4 := r.Intn(100)
+	tmps := make([]rune, v4)
+	for i := 0; i < v4; i++ {
 		tmps[i] = randUTF8RuneKeelhaul(r)
 	}
 	return string(tmps)
@@ -1169,11 +1594,11 @@ func randFieldKeelhaul(data []byte, r randyKeelhaul, fieldNumber int, wire int) 
 	switch wire {
 	case 0:
 		data = encodeVarintPopulateKeelhaul(data, uint64(key))
-		v4 := r.Int63()
+		v5 := r.Int63()
 		if r.Intn(2) == 0 {
-			v4 *= -1
+			v5 *= -1
 		}
-		data = encodeVarintPopulateKeelhaul(data, uint64(v4))
+		data = encodeVarintPopulateKeelhaul(data, uint64(v5))
 	case 1:
 		data = encodeVarintPopulateKeelhaul(data, uint64(key))
 		data = append(data, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
@@ -1197,4 +1622,1276 @@ func encodeVarintPopulateKeelhaul(data []byte, v uint64) []byte {
 	}
 	data = append(data, uint8(v))
 	return data
+}
+func (m *Filter) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	return n
+}
+
+func (m *ListBastionStatesRequest) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.CustomerIds) > 0 {
+		for _, s := range m.CustomerIds {
+			l = len(s)
+			n += 1 + l + sovKeelhaul(uint64(l))
+		}
+	}
+	if len(m.Filters) > 0 {
+		for _, e := range m.Filters {
+			l = e.Size()
+			n += 1 + l + sovKeelhaul(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *ListBastionStatesResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.BastionStates) > 0 {
+		for _, e := range m.BastionStates {
+			l = e.Size()
+			n += 1 + l + sovKeelhaul(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *ScanVpcsRequest) Size() (n int) {
+	var l int
+	_ = l
+	if m.User != nil {
+		l = m.User.Size()
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	l = len(m.Region)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	return n
+}
+
+func (m *ScanVpcsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Region != nil {
+		l = m.Region.Size()
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	return n
+}
+
+func (m *LaunchStackRequest) Size() (n int) {
+	var l int
+	_ = l
+	if m.User != nil {
+		l = m.User.Size()
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	l = len(m.Region)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	l = len(m.VpcId)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	l = len(m.SubnetId)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	l = len(m.InstanceSize)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	l = len(m.SubnetRouting)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	return n
+}
+
+func (m *LaunchStackResponse) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.StackId)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	return n
+}
+
+func (m *AuthenticateBastionRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Id)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	l = len(m.Password)
+	if l > 0 {
+		n += 1 + l + sovKeelhaul(uint64(l))
+	}
+	return n
+}
+
+func (m *AuthenticateBastionResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Success {
+		n += 2
+	}
+	return n
+}
+
+func sovKeelhaul(x uint64) (n int) {
+	for {
+		n++
+		x >>= 7
+		if x == 0 {
+			break
+		}
+	}
+	return n
+}
+func sozKeelhaul(x uint64) (n int) {
+	return sovKeelhaul(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *Filter) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Filter: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Filter: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeelhaul(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListBastionStatesRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListBastionStatesRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListBastionStatesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CustomerIds", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CustomerIds = append(m.CustomerIds, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Filters", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Filters = append(m.Filters, &Filter{})
+			if err := m.Filters[len(m.Filters)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeelhaul(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListBastionStatesResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListBastionStatesResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListBastionStatesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BastionStates", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BastionStates = append(m.BastionStates, &opsee.BastionState{})
+			if err := m.BastionStates[len(m.BastionStates)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeelhaul(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScanVpcsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ScanVpcsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ScanVpcsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field User", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.User == nil {
+				m.User = &opsee1.User{}
+			}
+			if err := m.User.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Region", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Region = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeelhaul(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScanVpcsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ScanVpcsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ScanVpcsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Region", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Region == nil {
+				m.Region = &opsee3.Region{}
+			}
+			if err := m.Region.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeelhaul(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LaunchStackRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LaunchStackRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LaunchStackRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field User", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.User == nil {
+				m.User = &opsee1.User{}
+			}
+			if err := m.User.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Region", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Region = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VpcId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VpcId = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SubnetId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SubnetId = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InstanceSize", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InstanceSize = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SubnetRouting", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SubnetRouting = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeelhaul(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LaunchStackResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LaunchStackResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LaunchStackResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StackId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StackId = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeelhaul(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AuthenticateBastionRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AuthenticateBastionRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AuthenticateBastionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Id = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Password", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Password = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeelhaul(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AuthenticateBastionResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AuthenticateBastionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AuthenticateBastionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Success = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeelhaul(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthKeelhaul
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipKeelhaul(data []byte) (n int, err error) {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowKeelhaul
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if data[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+			return iNdEx, nil
+		case 1:
+			iNdEx += 8
+			return iNdEx, nil
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowKeelhaul
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			iNdEx += length
+			if length < 0 {
+				return 0, ErrInvalidLengthKeelhaul
+			}
+			return iNdEx, nil
+		case 3:
+			for {
+				var innerWire uint64
+				var start int = iNdEx
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return 0, ErrIntOverflowKeelhaul
+					}
+					if iNdEx >= l {
+						return 0, io.ErrUnexpectedEOF
+					}
+					b := data[iNdEx]
+					iNdEx++
+					innerWire |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				innerWireType := int(innerWire & 0x7)
+				if innerWireType == 4 {
+					break
+				}
+				next, err := skipKeelhaul(data[start:])
+				if err != nil {
+					return 0, err
+				}
+				iNdEx = start + next
+			}
+			return iNdEx, nil
+		case 4:
+			return iNdEx, nil
+		case 5:
+			iNdEx += 4
+			return iNdEx, nil
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+	}
+	panic("unreachable")
+}
+
+var (
+	ErrInvalidLengthKeelhaul = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowKeelhaul   = fmt.Errorf("proto: integer overflow")
+)
+
+var fileDescriptorKeelhaul = []byte{
+	// 644 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xa4, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0x26, 0xfd, 0x49, 0xdc, 0x71, 0x13, 0xca, 0x16, 0x8a, 0xeb, 0x4a, 0xfd, 0x31, 0xaa, 0xa8,
+	0x38, 0xd4, 0x25, 0x1c, 0x10, 0x95, 0x38, 0xd0, 0x43, 0x45, 0xa1, 0x27, 0x47, 0xfc, 0x88, 0x03,
+	0x95, 0xbd, 0xd9, 0x36, 0xab, 0x26, 0xb6, 0xf1, 0xec, 0xb6, 0x2a, 0x8f, 0xc3, 0x89, 0x47, 0xe0,
+	0xc8, 0x11, 0x09, 0x21, 0xf1, 0x08, 0xc0, 0x53, 0x70, 0x64, 0xb3, 0xbb, 0x36, 0x85, 0xa4, 0x15,
+	0x12, 0x87, 0x95, 0x3c, 0xdf, 0xcc, 0x7c, 0x33, 0xfb, 0xed, 0x27, 0x43, 0xeb, 0x98, 0xb1, 0x7e,
+	0x2f, 0x96, 0xfd, 0xcd, 0xbc, 0xc8, 0x44, 0x46, 0xa6, 0xb3, 0x1c, 0x19, 0xf3, 0xb7, 0x8e, 0xb8,
+	0xe8, 0xc9, 0x64, 0x93, 0x66, 0x83, 0x50, 0x23, 0xa1, 0x4e, 0x27, 0xf2, 0xd0, 0x84, 0x3a, 0x32,
+	0x9f, 0xa6, 0xd1, 0xdf, 0xfe, 0xa7, 0x0e, 0x71, 0x96, 0x33, 0x0c, 0x05, 0x1f, 0x30, 0x14, 0xf1,
+	0x20, 0xb7, 0xbd, 0xae, 0x0a, 0xe8, 0xb1, 0x0d, 0x36, 0x46, 0x88, 0x92, 0x18, 0x39, 0x0d, 0x91,
+	0xf6, 0xd8, 0x20, 0x0e, 0x25, 0xb2, 0xc2, 0x56, 0xde, 0xb9, 0xbc, 0xb2, 0x60, 0x47, 0x3c, 0x4b,
+	0x6d, 0xed, 0xdd, 0xcb, 0x6b, 0xe3, 0x53, 0x0c, 0x19, 0x6d, 0x9b, 0xfd, 0x4c, 0x4b, 0xb0, 0x05,
+	0xf5, 0x5d, 0xde, 0x17, 0xac, 0x20, 0x73, 0x30, 0x79, 0xcc, 0xce, 0xbc, 0xda, 0x6a, 0x6d, 0x63,
+	0x26, 0x1a, 0x7e, 0x92, 0xeb, 0x30, 0x7d, 0x12, 0xf7, 0x25, 0xf3, 0x26, 0x34, 0x66, 0x82, 0xe0,
+	0x10, 0xbc, 0x7d, 0x8e, 0x62, 0x27, 0x46, 0xa1, 0x26, 0x77, 0x44, 0x2c, 0x18, 0x46, 0xec, 0x8d,
+	0x54, 0x97, 0x25, 0x6b, 0x30, 0x4b, 0x25, 0x8a, 0x6c, 0xc0, 0x8a, 0x03, 0xde, 0x45, 0x45, 0x36,
+	0xa9, 0x1a, 0xdd, 0x12, 0xdb, 0xeb, 0x22, 0xb9, 0x0d, 0x8d, 0x43, 0x3d, 0x10, 0x15, 0xed, 0xe4,
+	0x86, 0xdb, 0x6e, 0x6e, 0x1a, 0x85, 0xcd, 0x1a, 0x51, 0x99, 0x0d, 0x5e, 0xc0, 0xe2, 0x98, 0x39,
+	0x98, 0x67, 0x29, 0x32, 0xb2, 0x0d, 0xad, 0xc4, 0x24, 0x0e, 0x50, 0x67, 0xf4, 0x28, 0xb7, 0x3d,
+	0x6f, 0xc9, 0xce, 0x77, 0x45, 0xcd, 0xe4, 0x3c, 0x47, 0xf0, 0x04, 0xae, 0x76, 0x68, 0x9c, 0x3e,
+	0xcf, 0x69, 0xb5, 0xf7, 0x0a, 0x4c, 0x0d, 0x25, 0xd7, 0x97, 0x77, 0xdb, 0xae, 0x25, 0x79, 0xa6,
+	0xa0, 0x48, 0x27, 0xc8, 0x02, 0xd4, 0x8d, 0xd2, 0xde, 0x94, 0xd6, 0xc2, 0x46, 0xc1, 0x03, 0x98,
+	0xfb, 0xcd, 0x65, 0x77, 0x5b, 0xaf, 0x6a, 0x0d, 0x5d, 0x79, 0xc1, 0x48, 0x83, 0x55, 0xeb, 0x97,
+	0x1a, 0x90, 0xfd, 0x58, 0xa6, 0xb4, 0xd7, 0x19, 0x1a, 0xe3, 0x7f, 0x57, 0x21, 0x37, 0xa0, 0x7e,
+	0x92, 0x53, 0x25, 0xbb, 0x37, 0x6d, 0x9f, 0x2b, 0xa7, 0x7b, 0x5d, 0xb2, 0x04, 0x33, 0x28, 0x93,
+	0x94, 0x89, 0x61, 0xa6, 0xae, 0x33, 0x8e, 0x01, 0x54, 0xf2, 0x16, 0x34, 0x79, 0xaa, 0x04, 0x4c,
+	0x29, 0x3b, 0x40, 0xfe, 0x96, 0x79, 0x0d, 0x5d, 0x30, 0x5b, 0x82, 0x1d, 0x85, 0xa9, 0xfb, 0xb4,
+	0x2c, 0x43, 0x91, 0x49, 0xc1, 0xd3, 0x23, 0xcf, 0xd1, 0x55, 0x4d, 0x83, 0x46, 0x06, 0x54, 0x4e,
+	0x9a, 0xff, 0xe3, 0x3a, 0x56, 0x8d, 0x45, 0x70, 0xb4, 0xf1, 0x87, 0xe3, 0x8d, 0xb7, 0x1a, 0x3a,
+	0xde, 0xeb, 0x06, 0x8f, 0xc1, 0x7f, 0x24, 0x45, 0x8f, 0xa5, 0x82, 0x53, 0xf5, 0x32, 0xf6, 0xcd,
+	0x4a, 0x21, 0x5a, 0x30, 0x51, 0xb5, 0xa8, 0x2f, 0xe2, 0x83, 0x93, 0xc7, 0x88, 0xa7, 0x59, 0xd1,
+	0xb5, 0x86, 0xac, 0xe2, 0xe0, 0x3e, 0x2c, 0x8d, 0x65, 0xb2, 0x3b, 0x78, 0xd0, 0x40, 0x49, 0x29,
+	0x43, 0xd4, 0x7c, 0x4e, 0x54, 0x86, 0xed, 0xcf, 0x13, 0xe0, 0x3c, 0xb5, 0x3f, 0x07, 0xf2, 0x12,
+	0xae, 0x8d, 0x38, 0x8e, 0xac, 0xd8, 0x17, 0xb8, 0xc8, 0xf3, 0xfe, 0xea, 0xc5, 0x05, 0x66, 0x7c,
+	0x70, 0x85, 0x3c, 0x04, 0xa7, 0xb4, 0x09, 0x59, 0xb0, 0xf5, 0x7f, 0x79, 0xd0, 0xbf, 0x39, 0x82,
+	0x57, 0xed, 0xbb, 0xe0, 0x9e, 0x93, 0x96, 0x2c, 0x96, 0x13, 0x47, 0xdc, 0xe3, 0xfb, 0xe3, 0x52,
+	0x15, 0xcf, 0x6b, 0x98, 0x1f, 0x23, 0x13, 0x59, 0xb3, 0x4d, 0x17, 0x3f, 0x86, 0x1f, 0x5c, 0x56,
+	0x52, 0xf2, 0xef, 0xac, 0xff, 0xfc, 0xbe, 0x5c, 0x7b, 0xff, 0x63, 0xb9, 0xf6, 0x41, 0x9d, 0x4f,
+	0xea, 0x7c, 0x55, 0xe7, 0x9b, 0x3a, 0x1f, 0xdf, 0xad, 0xd4, 0x5e, 0x35, 0x94, 0x7b, 0x4f, 0x38,
+	0x65, 0x49, 0x5d, 0xff, 0x7a, 0xee, 0xfd, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x5f, 0xe8, 0xf6, 0x9e,
+	0x97, 0x05, 0x00, 0x00,
 }

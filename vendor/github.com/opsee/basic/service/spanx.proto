@@ -10,6 +10,14 @@ package opsee;
 option go_package = "service";
 option (opseeproto.graphql) = true;
 
+message EnhancedCombatModeRequest {
+	User user = 1;
+}
+
+message EnhancedCombatModeResponse {
+	string stack_url = 1;
+}
+
 message PutRoleRequest {
 	User user = 1;
 	aws.credentials.Value credentials = 2;
@@ -25,9 +33,11 @@ message GetCredentialsRequest {
 
 message GetCredentialsResponse {
 	aws.credentials.Value credentials = 1;
+	opsee.types.Timestamp Expires = 2;
 }
 
 service Spanx {
+	rpc EnhancedCombatMode(EnhancedCombatModeRequest) returns (EnhancedCombatModeResponse) {}
 	rpc PutRole(PutRoleRequest) returns (PutRoleResponse) {}
 	rpc GetCredentials(GetCredentialsRequest) returns (GetCredentialsResponse) {}
 }

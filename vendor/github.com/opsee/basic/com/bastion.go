@@ -41,6 +41,7 @@ type Bastion struct {
 	GroupID       sql.NullString `json:"group_id" db:"group_id"`
 	InstanceType  string         `json:"instance_type" db:"instance_type"`
 	SubnetRouting string         `json:"subnet_routing" db:"subnet_routing"`
+	Region        string         `json:"region"`
 	VPCID         string         `json:"vpc_id" db:"vpc_id"`
 	SubnetID      string         `json:"subnet_id" db:"subnet_id"`
 	State         string         `json:"state"`
@@ -51,7 +52,7 @@ type Bastion struct {
 	UpdatedAt     time.Time      `json:"updated_at" db:"updated_at"`
 }
 
-func NewBastion(userID int, customerID, vpcID, subnetID, subnetRouting, instanceType string) (*Bastion, error) {
+func NewBastion(userID int, customerID, region, vpcID, subnetID, subnetRouting, instanceType string) (*Bastion, error) {
 	pwbytes := make([]byte, 18)
 	if _, err := rand.Read(pwbytes); err != nil {
 		return nil, err
@@ -71,6 +72,7 @@ func NewBastion(userID int, customerID, vpcID, subnetID, subnetRouting, instance
 		InstanceType:  instanceType,
 		SubnetRouting: subnetRouting,
 		State:         BastionStateNew,
+		Region:        region,
 		VPCID:         vpcID,
 		SubnetID:      subnetID,
 		StackID:       sql.NullString{},
