@@ -52,11 +52,11 @@ var scanCmd = &cobra.Command{
 			return err
 		}
 
-		for _, v := range regionScan.VPCs {
-			fmt.Printf("%s (%d instances, default=%t)\n", *v.VpcId, v.InstanceCount, *v.IsDefault)
+		for _, v := range regionScan.Vpcs {
+			fmt.Printf("%s (%d instances, default=%t)\n", v.VpcId, v.InstanceCount, v.IsDefault)
 			for _, s := range regionScan.Subnets {
-				if *s.VpcId == *v.VpcId {
-					fmt.Printf("  %s (%s, %d instances, %s)\n", *s.SubnetId, *s.AvailabilityZone, s.InstanceCount, s.Routing)
+				if s.VpcId == v.VpcId {
+					fmt.Printf("  %s (%s, %d instances, %s)\n", s.SubnetId, s.AvailabilityZone, s.InstanceCount, s.Routing)
 				}
 			}
 		}
