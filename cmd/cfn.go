@@ -63,10 +63,6 @@ func (s cfnStack) getStackParams() []*cloudformation.Parameter {
 			ParameterKey:     aws.String("BastionId"),
 			UsePreviousValue: aws.Bool(true),
 		},
-		{
-			ParameterKey:     aws.String("OpseeRole"),
-			UsePreviousValue: aws.Bool(true),
-		},
 	}
 
 	if viper.IsSet("cfnup-ami-id") {
@@ -90,6 +86,13 @@ func (s cfnStack) getStackParams() []*cloudformation.Parameter {
 		params = append(params, &cloudformation.Parameter{
 			ParameterKey:   aws.String("AllowSSH"),
 			ParameterValue: aws.String("False"),
+		})
+	}
+
+	if viper.IsSet("no-role-stack") {
+		params = append(params, &cloudformation.Parameter{
+			ParameterKey:     aws.String("OpseeRole"),
+			UsePreviousValue: aws.Bool(true),
 		})
 	}
 
@@ -162,10 +165,13 @@ func (s cfnStack) makeStackParams(user *schema.User) []*cloudformation.Parameter
 			ParameterKey:   aws.String("BastionId"),
 			ParameterValue: aws.String(viper.GetString("cfncreate-bastion")),
 		},
-		{
+	}
+
+	if viper.IsSet("no-role-stack") {
+		params = append(params, &cloudformation.Parameter{
 			ParameterKey:   aws.String("OpseeRole"),
 			ParameterValue: aws.String(fmt.Sprintf("opsee-role-%s", user.CustomerId)),
-		},
+		})
 	}
 
 	return params
@@ -553,6 +559,9 @@ func init() {
 	viper.BindPFlag("cfnup-ami-id", flags.Lookup("ami-id"))
 	flags.BoolP("wait", "w", false, "wait for update to complate")
 	viper.BindPFlag("cfnup-wait", flags.Lookup("wait"))
+
+	flags.BoolP("no-role-stack", "r", false, "Set if role included in bastion stack")
+	viper.BindPFlag("no-role-stack", flags.Lookup("no-role-stack"))
 
 	/* TODO finish impl
 	cfnCommand.AddCommand(cfnCreate)
