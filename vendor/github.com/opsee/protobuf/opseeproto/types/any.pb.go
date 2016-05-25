@@ -8,13 +8,11 @@
 	It is generated from these files:
 		types/any.proto
 		types/errors.proto
-		types/permissions.proto
 		types/timestamp.proto
 
 	It has these top-level messages:
 		Any
 		Error
-		Permission
 		Timestamp
 */
 package types
