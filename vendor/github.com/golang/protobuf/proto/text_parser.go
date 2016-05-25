@@ -550,7 +550,7 @@ func (p *textParser) readStruct(sv reflect.Value, terminator string) error {
 				}
 				reqFieldErr = err
 			}
-			ep := sv.Addr().Interface().(Message)
+			ep := sv.Addr().Interface().(extendableProto)
 			if !rep {
 				SetExtension(ep, desc, ext.Interface())
 			} else {
@@ -663,8 +663,7 @@ func (p *textParser) readStruct(sv reflect.Value, terminator string) error {
 				return err
 			}
 			reqFieldErr = err
-		}
-		if props.Required {
+		} else if props.Required {
 			reqCount--
 		}
 

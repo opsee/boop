@@ -75,7 +75,6 @@ type dialOptions struct {
 	codec    Codec
 	cp       Compressor
 	dc       Decompressor
-	bs       backoffStrategy
 	picker   Picker
 	block    bool
 	insecure bool
@@ -112,34 +111,6 @@ func WithDecompressor(dc Decompressor) DialOption {
 func WithPicker(p Picker) DialOption {
 	return func(o *dialOptions) {
 		o.picker = p
-	}
-}
-
-// WithBackoffMaxDelay configures the dialer to use the provided maximum delay
-// when backing off after failed connection attempts.
-func WithBackoffMaxDelay(md time.Duration) DialOption {
-	return WithBackoffConfig(BackoffConfig{MaxDelay: md})
-}
-
-// WithBackoffConfig configures the dialer to use the provided backoff
-// parameters after connection failures.
-//
-// Use WithBackoffMaxDelay until more parameters on BackoffConfig are opened up
-// for use.
-func WithBackoffConfig(b BackoffConfig) DialOption {
-	// Set defaults to ensure that provided BackoffConfig is valid and
-	// unexported fields get default values.
-	setDefaults(&b)
-	return withBackoff(b)
-}
-
-// withBackoff sets the backoff strategy used for retries after a
-// failed connection attempt.
-//
-// This can be exported if arbitrary backoff strategies are allowed by GRPC.
-func withBackoff(bs backoffStrategy) DialOption {
-	return func(o *dialOptions) {
-		o.bs = bs
 	}
 }
 
@@ -209,11 +180,6 @@ func Dial(target string, opts ...DialOption) (*ClientConn, error) {
 		// Set the default codec.
 		cc.dopts.codec = protoCodec{}
 	}
-
-	if cc.dopts.bs == nil {
-		cc.dopts.bs = DefaultBackoffConfig
-	}
-
 	if cc.dopts.picker == nil {
 		cc.dopts.picker = &unicastPicker{
 			target: target,
@@ -449,7 +415,7 @@ func (cc *Conn) resetTransport(closeTransport bool) error {
 				return ErrClientConnTimeout
 			}
 		}
-		sleepTime := cc.dopts.bs.backoff(retries)
+		sleepTime := backoff(retries)
 		timeout := sleepTime
 		if timeout < minConnectTimeout {
 			timeout = minConnectTimeout
@@ -491,10 +457,7 @@ func (cc *Conn) resetTransport(closeTransport bool) error {
 				return ErrClientConnTimeout
 			}
 			closeTransport = false
-			select {
-			case <-time.After(sleepTime):
-			case <-cc.shutdownChan:
-			}
+			time.Sleep(sleepTime)
 			retries++
 			grpclog.Printf("grpc: Conn.resetTransport failed to create client transport: %v; Reconnecting to %q", err, cc.target)
 			continue
