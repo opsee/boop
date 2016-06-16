@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -19,13 +20,21 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strings"
 	"text/tabwriter"
 	"time"
 )
 
-const cfnS3BucketURL = "https://s3%s%s.amazonaws.com/opsee-bastion-cf-%s/beta"
-const cfnTemplate = "bastion-cf.template"
-const secGrpTemplate = "bastion-ingress-cf.template"
+const (
+	secGrpTemplate = "bastion-ingress-cf.template"
+	cfnTemplate    = "bastion-cf.template"
+	cfnS3BucketURL = "https://s3%s%s.amazonaws.com/opsee-bastion-cf-%s/beta"
+	badUserdata    = `        - name: "10-cgroupfs.conf"
+          content: |
+            [Service]
+            Environment="DOCKER_OPTS=--exec-opt=native.cgroupdriver=cgroupfs"
+`
+)
 
 type cfnStack struct {
 	Creds  *credentials.Credentials
@@ -33,14 +42,10 @@ type cfnStack struct {
 	Stack  *cloudformation.Stack
 }
 
-func (s cfnStack) getStackParams() []*cloudformation.Parameter {
+func (s cfnStack) getStackParams() ([]*cloudformation.Parameter, error) {
 	params := []*cloudformation.Parameter{
 		{
 			ParameterKey:     aws.String("InstanceType"),
-			UsePreviousValue: aws.Bool(true),
-		},
-		{
-			ParameterKey:     aws.String("UserData"),
 			UsePreviousValue: aws.Bool(true),
 		},
 		{
@@ -96,7 +101,24 @@ func (s cfnStack) getStackParams() []*cloudformation.Parameter {
 		})
 	}
 
-	return params
+	if viper.GetBool("userdata") {
+		userdata, err := s.getUserdata()
+		if err != nil {
+			return nil, err
+		}
+
+		params = append(params, &cloudformation.Parameter{
+			ParameterKey:   aws.String("UserData"),
+			ParameterValue: aws.String(base64.StdEncoding.EncodeToString([]byte(userdata))),
+		})
+	} else {
+		params = append(params, &cloudformation.Parameter{
+			ParameterKey:     aws.String("UserData"),
+			UsePreviousValue: aws.Bool(true),
+		})
+	}
+
+	return params, nil
 }
 
 func (s cfnStack) makeStackTags(user *schema.User) []*cloudformation.Tag {
@@ -207,9 +229,58 @@ func (s cfnStack) getS3URL(template string) string {
 	return u.String()
 }
 
+func (s cfnStack) getUserdata() (string, error) {
+	if s.Stack != nil {
+		for _, p := range s.Stack.Parameters {
+			if aws.StringValue(p.ParameterKey) == "UserData" {
+				data, err := base64.StdEncoding.DecodeString(aws.StringValue(p.ParameterValue))
+				if err != nil {
+					return "", err
+				}
+
+				return strings.Replace(string(data), badUserdata, "", 1), nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("no stack found")
+
+}
+
 var cfnCommand = &cobra.Command{
 	Use:   "cfn",
 	Short: "bastion cloud formation commands",
+}
+
+var cfnUserdata = &cobra.Command{
+	Use:   "userdata [customer email|customer UUID]",
+	Short: "show a cloudformation stack's userdata",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		opseeServices := &svc.OpseeServices{}
+
+		u, err := util.GetUserFromArgs(args, 0, opseeServices)
+		if err != nil {
+			return err
+		}
+
+		if viper.GetBool("verbose") {
+			log.SetStdoutThreshold(log.LevelInfo)
+		}
+
+		stackName := "opsee-stack-" + u.CustomerId
+		stack, err := findStack(u, stackName, opseeServices)
+		if err != nil {
+			return err
+		}
+
+		ud, err := stack.getUserdata()
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(ud)
+		return nil
+	},
 }
 
 var cfnUpdate = &cobra.Command{
@@ -241,15 +312,21 @@ var cfnUpdate = &cobra.Command{
 				return err
 			}
 
+			params, err := stack.getStackParams()
+			if err != nil {
+				return err
+			}
+
 			cfnClient := cloudformation.New(session.New(),
 				aws.NewConfig().WithCredentials(stack.Creds).WithRegion(stack.Region).WithMaxRetries(10))
+
 			_, err = cfnClient.UpdateStack(&cloudformation.UpdateStackInput{
 				StackName:    aws.String(stackName),
 				TemplateBody: aws.String(string(templateBytes)),
 				Capabilities: []*string{
 					aws.String("CAPABILITY_IAM"),
 				},
-				Parameters: stack.getStackParams(),
+				Parameters: params,
 			})
 			if err != nil {
 				return err
@@ -559,9 +636,12 @@ func init() {
 	viper.BindPFlag("cfnup-ami-id", flags.Lookup("ami-id"))
 	flags.BoolP("wait", "w", false, "wait for update to complate")
 	viper.BindPFlag("cfnup-wait", flags.Lookup("wait"))
-
 	flags.BoolP("no-role-stack", "r", false, "Set if role included in bastion stack")
 	viper.BindPFlag("no-role-stack", flags.Lookup("no-role-stack"))
+	flags.BoolP("userdata", "u", false, "refresh userdata")
+	viper.BindPFlag("userdata", flags.Lookup("userdata"))
+
+	cfnCommand.AddCommand(cfnUserdata)
 
 	/* TODO finish impl
 	cfnCommand.AddCommand(cfnCreate)
