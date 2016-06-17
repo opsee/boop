@@ -9,6 +9,7 @@ import (
 	"github.com/fatih/color"
 	log "github.com/mborsuk/jwalterweatherman"
 	"github.com/opsee/basic/schema"
+	"github.com/opsee/basic/service"
 	"github.com/opsee/boop/errors"
 	"github.com/opsee/boop/svc"
 	"github.com/opsee/boop/util"
@@ -37,20 +38,37 @@ var bastionListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opseeServices := &svc.OpseeServices{}
 
-		u, err := util.GetUserFromArgs(args, 0, opseeServices)
-		if err != nil {
-			return err
-		}
-
-		bastionStates, err := opseeServices.GetBastionStates([]string{u.CustomerId})
-		if err != nil {
-			return err
-		}
-
 		if viper.GetBool("verbose") {
 			log.SetStdoutThreshold(log.LevelInfo)
 		}
-		log.INFO.Printf("user info: %s, %s, %s\n", u.Email, u.CustomerId, u.Name)
+
+		var (
+			bastionStates []*schema.BastionState
+			err           error
+		)
+
+		if viper.GetBool("list-active") {
+			bastionStates, err = opseeServices.GetBastionStates([]string{}, &service.Filter{
+				Key:   "status",
+				Value: "active",
+			})
+			if err != nil {
+				return err
+			}
+
+		} else {
+			u, err := util.GetUserFromArgs(args, 0, opseeServices)
+			if err != nil {
+				return err
+			}
+
+			bastionStates, err = opseeServices.GetBastionStates([]string{u.CustomerId})
+			if err != nil {
+				return err
+			}
+
+			log.INFO.Printf("user info: %s, %s, %s\n", u.Email, u.CustomerId, u.Name)
+		}
 
 		yellow := color.New(color.FgYellow).SprintFunc()
 		blue := color.New(color.FgBlue).SprintFunc()
@@ -59,29 +77,15 @@ var bastionListCmd = &cobra.Command{
 		w := new(tabwriter.Writer)
 		w.Init(os.Stdout, 1, 0, 2, ' ', 0)
 
-		if len(bastionStates) > 0 {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", header("id"), "status",
-				header("last seen"), "region", header("instance id"), "instance state")
+		if len(bastionStates) > 0 && !viper.GetBool("quiet") {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", header("customer_id"), header("id"), header("status"),
+				header("last seen"), header("region"))
 		}
 
 		for _, b := range bastionStates {
-			reg := ""
-			instID := ""
-			instState := ""
-			if b.Status == "active" {
-				inst, err := findBastionInstance(u, b.Id, opseeServices)
-				if err != nil {
-					log.WARN.Printf("error finding bastion instance for %s\n", b.Id)
-				} else {
-					reg = inst.Region
-					instID = *inst.Instance.InstanceId
-					instState = *inst.Instance.State.Name
-				}
-			}
-
 			lastSeenDur := time.Since(time.Unix(b.LastSeen.Seconds, 0))
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", yellow(b.Id), b.Status,
-				blue(roundDuration(lastSeenDur, time.Second)), reg, blue(instID), instState)
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", b.CustomerId, yellow(b.Id), b.Status,
+				blue(roundDuration(lastSeenDur, time.Second)), b.Region)
 		}
 		w.Flush()
 
@@ -267,8 +271,10 @@ func init() {
 
 	bastionCmd.AddCommand(bastionListCmd)
 	flags := bastionListCmd.Flags()
-	flags.BoolP("active", "a", false, "list active only")
+	flags.BoolP("active", "a", false, "list all active bastions")
 	viper.BindPFlag("list-active", flags.Lookup("active"))
+	flags.BoolP("quiet", "q", false, "silent output")
+	viper.BindPFlag("quiet", flags.Lookup("quiet"))
 
 	bastionCmd.AddCommand(bastionRestartCmd)
 

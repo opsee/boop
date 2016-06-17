@@ -74,11 +74,12 @@ func (o *OpseeServices) GetRoleCreds(user *schema.User) (*opsee_aws_credentials.
 	return spanxResp.GetCredentials(), nil
 }
 
-func (o *OpseeServices) GetBastionStates(customerIDs []string) ([]*schema.BastionState, error) {
+func (o *OpseeServices) GetBastionStates(customerIDs []string, filters ...*service.Filter) ([]*schema.BastionState, error) {
 	o.initKeelhaul()
 
 	keelResp, err := o.keelhaul.ListBastionStates(context.Background(), &service.ListBastionStatesRequest{
 		CustomerIds: customerIDs,
+		Filters:     filters,
 	})
 	if err != nil {
 		return nil, err
