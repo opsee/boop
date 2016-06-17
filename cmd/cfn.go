@@ -22,7 +22,6 @@ import (
 	"path"
 	"strings"
 	"text/tabwriter"
-	"time"
 )
 
 const (
@@ -42,7 +41,7 @@ type cfnStack struct {
 	Stack  *cloudformation.Stack
 }
 
-func (s cfnStack) getStackParams() ([]*cloudformation.Parameter, error) {
+func (s cfnStack) getStackParams(amiId string) ([]*cloudformation.Parameter, error) {
 	params := []*cloudformation.Parameter{
 		{
 			ParameterKey:     aws.String("InstanceType"),
@@ -70,10 +69,10 @@ func (s cfnStack) getStackParams() ([]*cloudformation.Parameter, error) {
 		},
 	}
 
-	if viper.IsSet("cfnup-ami-id") {
+	if amiId != "" {
 		params = append(params, &cloudformation.Parameter{
 			ParameterKey:   aws.String("ImageId"),
-			ParameterValue: aws.String(viper.GetString("cfnup-ami-id")),
+			ParameterValue: aws.String(amiId),
 		})
 	} else {
 		params = append(params, &cloudformation.Parameter{
@@ -91,13 +90,6 @@ func (s cfnStack) getStackParams() ([]*cloudformation.Parameter, error) {
 		params = append(params, &cloudformation.Parameter{
 			ParameterKey:   aws.String("AllowSSH"),
 			ParameterValue: aws.String("False"),
-		})
-	}
-
-	if viper.IsSet("no-role-stack") {
-		params = append(params, &cloudformation.Parameter{
-			ParameterKey:     aws.String("OpseeRole"),
-			UsePreviousValue: aws.Bool(true),
 		})
 	}
 
@@ -119,84 +111,6 @@ func (s cfnStack) getStackParams() ([]*cloudformation.Parameter, error) {
 	}
 
 	return params, nil
-}
-
-func (s cfnStack) makeStackTags(user *schema.User) []*cloudformation.Tag {
-	tags := []*cloudformation.Tag{
-		{
-			Key:   aws.String("Name"),
-			Value: aws.String("Opsee Stack"),
-		},
-		{
-			Key:   aws.String("vendor"),
-			Value: aws.String("opsee"),
-		},
-		{
-			Key:   aws.String("opsee:customer-id"),
-			Value: aws.String(user.CustomerId),
-		},
-	}
-
-	return tags
-}
-
-func (s cfnStack) makeStackParams(user *schema.User) []*cloudformation.Parameter {
-	assocIP := "False"
-	if viper.GetBool("cfncreate-assoc-ip") {
-		assocIP = "True"
-	}
-	allowSSH := "False"
-	if viper.GetBool("cfncreate-allow-ssh") {
-		allowSSH = "True"
-	}
-	params := []*cloudformation.Parameter{
-		{
-			ParameterKey:   aws.String("InstanceType"),
-			ParameterValue: aws.String(viper.GetString("cfncreate-inst-type")),
-		},
-		{
-			// TODO get userdata from file
-			ParameterKey:   aws.String("UserData"),
-			ParameterValue: aws.String(""),
-		},
-		{
-			ParameterKey:   aws.String("VpcId"),
-			ParameterValue: aws.String(viper.GetString("cfncreate-vpc")),
-		},
-		{
-			ParameterKey:   aws.String("SubnetId"),
-			ParameterValue: aws.String(viper.GetString("cfncreate-subnet")),
-		},
-		{
-			ParameterKey:   aws.String("AssociatePublicIpAddress"),
-			ParameterValue: aws.String(assocIP),
-		},
-		{
-			ParameterKey:   aws.String("ImageId"),
-			ParameterValue: aws.String(viper.GetString("cfncreate-ami")),
-		},
-		{
-			ParameterKey:   aws.String("AllowSSH"),
-			ParameterValue: aws.String(allowSSH),
-		},
-		{
-			ParameterKey:   aws.String("CustomerId"),
-			ParameterValue: aws.String(user.CustomerId),
-		},
-		{
-			ParameterKey:   aws.String("BastionId"),
-			ParameterValue: aws.String(viper.GetString("cfncreate-bastion")),
-		},
-	}
-
-	if viper.IsSet("no-role-stack") {
-		params = append(params, &cloudformation.Parameter{
-			ParameterKey:   aws.String("OpseeRole"),
-			ParameterValue: aws.String(fmt.Sprintf("opsee-role-%s", user.CustomerId)),
-		})
-	}
-
-	return params
 }
 
 func (s cfnStack) getCFNTemplate() ([]byte, error) {
@@ -312,7 +226,26 @@ var cfnUpdate = &cobra.Command{
 				return err
 			}
 
-			params, err := stack.getStackParams()
+			var amiId string
+			if viper.GetBool("latest") {
+				log.INFO.Printf("requesting latest image in region: %s", stack.Region)
+				imageList, err := getAMIList(stack.Region, "stable")
+				if err != nil {
+					return err
+				}
+
+				if len(imageList) == 0 {
+					return fmt.Errorf("no images found")
+				}
+
+				amiId = aws.StringValue(imageList[0].ImageId)
+			} else {
+				amiId = viper.GetString("cfnup-ami-id")
+			}
+
+			log.INFO.Printf("updating with image id: %s", amiId)
+
+			params, err := stack.getStackParams(amiId)
 			if err != nil {
 				return err
 			}
@@ -359,98 +292,6 @@ var cfnUpdate = &cobra.Command{
 
 				stk := descResponse.Stacks[0]
 				fmt.Printf("update complete: %s, %s\n", *stk.StackStatus, *stk.StackStatusReason)
-			}
-		}
-		return nil
-	},
-}
-
-var cfnCreate = &cobra.Command{
-	Use:   "create [customer email|customer UUID]",
-	Short: "create new CFN stack from current template for registered user",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		opseeServices := &svc.OpseeServices{}
-
-		u, err := util.GetUserFromArgs(args, 0, opseeServices)
-		if err != nil {
-			return err
-		}
-
-		// TODO find better way to set required options
-		if !viper.IsSet("cfncreate-region") {
-			return errors.NewUserError("required option not set: region")
-		}
-		region := viper.GetString("cfncreate-region")
-		if !viper.IsSet("cfncreate-vpc") {
-			return errors.NewUserError("required option not set: vpc")
-		}
-		if !viper.IsSet("cfncreate-subnet") {
-			return errors.NewUserError("required option not set: subnet")
-		}
-		if !viper.IsSet("cfncreate-ami") {
-			return errors.NewUserError("required option not set: ami")
-		}
-		if !viper.IsSet("cfncreate-bastion") {
-			return errors.NewUserError("required option not set: bastion")
-		}
-
-		stackName := "opsee-stack-" + u.CustomerId
-		stack, err := findStack(u, stackName, opseeServices)
-		if err != nil {
-			return err
-		}
-
-		if stack.Stack != nil {
-			return errors.NewUserError(fmt.Sprintf("stack %s already exists in %s", stackName, stack.Region))
-		}
-
-		stack.Region = region
-		templateBytes, err := stack.getCFNTemplate()
-		if err != nil {
-			return err
-		}
-		_ = templateBytes
-
-		cfnClient := cloudformation.New(session.New(),
-			aws.NewConfig().WithCredentials(stack.Creds).WithRegion(stack.Region).WithMaxRetries(10))
-
-		params := stack.makeStackParams(u)
-		tags := stack.makeStackTags(u)
-
-		_, err = cfnClient.CreateStack(&cloudformation.CreateStackInput{
-			StackName:    aws.String(stackName),
-			TemplateBody: aws.String(string(templateBytes)),
-			Capabilities: []*string{
-				aws.String("CAPABILITY_IAM"),
-			},
-			Parameters: params,
-			Tags:       tags,
-		})
-		if err != nil {
-			return err
-		}
-
-		if viper.GetBool("cfncreate-wait") {
-			for {
-				descResp, err := cfnClient.DescribeStacks(&cloudformation.DescribeStacksInput{
-					StackName: aws.String(stackName),
-				})
-				if err != nil {
-					return err
-				}
-				createdStack := descResp.Stacks[0]
-				if createdStack == nil {
-					log.WARN.Printf("unable to describe stack %s\n", stackName)
-					break
-				}
-
-				createStatus := ptos(createdStack.StackStatus)
-				fmt.Printf("%s status: %s\n", *createdStack.StackName, createStatus)
-				if createStatus == "CREATE_COMPLETE" || createStatus == "ROLLBACK_COMPLETE" {
-					break
-				}
-
-				time.Sleep(5 * time.Second)
 			}
 		}
 
@@ -636,46 +477,10 @@ func init() {
 	viper.BindPFlag("cfnup-ami-id", flags.Lookup("ami-id"))
 	flags.BoolP("wait", "w", false, "wait for update to complate")
 	viper.BindPFlag("cfnup-wait", flags.Lookup("wait"))
-	flags.BoolP("no-role-stack", "r", false, "Set if role included in bastion stack")
-	viper.BindPFlag("no-role-stack", flags.Lookup("no-role-stack"))
 	flags.BoolP("userdata", "u", false, "refresh userdata")
 	viper.BindPFlag("userdata", flags.Lookup("userdata"))
+	flags.BoolP("latest", "l", false, "use latest stable ami in this region")
+	viper.BindPFlag("latest", flags.Lookup("latest"))
 
 	cfnCommand.AddCommand(cfnUserdata)
-
-	/* TODO finish impl
-	cfnCommand.AddCommand(cfnCreate)
-	flags = cfnCreate.Flags()
-	// start of many create stack params
-	flags.StringP("region", "r", "", "create stack in region")
-	viper.BindPFlag("cfncreate-region", flags.Lookup("region"))
-
-	flags.StringP("bastion", "b", "", "bastion id")
-	viper.BindPFlag("cfncreate-bastion", flags.Lookup("bastion"))
-
-	flags.StringP("subnet", "s", "", "subnet id")
-	viper.BindPFlag("cfncreate-subnet", flags.Lookup("subnet"))
-
-	flags.StringP("vpc", "p", "", "vpc id")
-	viper.BindPFlag("cfncreate-vpc", flags.Lookup("vpc"))
-
-	flags.StringP("instance-type", "t", "t2.micro", "instance type")
-	viper.BindPFlag("cfncreate-inst-type", flags.Lookup("instance-type"))
-
-	flags.BoolP("assoc-ip", "", false, "associate public ip")
-	viper.BindPFlag("cfncreate-assoc-ip", flags.Lookup("assoc-ip"))
-
-	flags.StringP("ami", "i", "", "AMI id")
-	viper.BindPFlag("cfncreate-ami", flags.Lookup("ami"))
-
-	flags.BoolP("allow-ssh", "", false, "allow ssh")
-	viper.BindPFlag("cfncreate-allow-ssh", flags.Lookup("allow-ssh"))
-
-	flags.BoolP("wait", "w", false, "wait for create to complate")
-	viper.BindPFlag("cfncreate-wait", flags.Lookup("wait"))
-
-	flags.StringP("userdata-file", "u", "", "file containing userdata")
-	viper.BindPFlag("cfncreate-userdatafn", flags.Lookup("userdata-file"))
-	// end create stack params
-	*/
 }

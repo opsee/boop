@@ -17,6 +17,18 @@ import (
 	"text/tabwriter"
 )
 
+var regions = map[string]bool{
+	"ap-northeast-1": true,
+	"ap-southeast-1": true,
+	"ap-southeast-2": true,
+	"eu-central-1":   true,
+	"eu-west-1":      true,
+	"sa-east-1":      true,
+	"us-east-1":      true,
+	"us-west-1":      true,
+	"us-west-2":      true,
+}
+
 type ImageList []*ec2.Image
 
 func (l ImageList) Len() int           { return len(l) }
@@ -43,7 +55,7 @@ var bastionAMIList = &cobra.Command{
 	Short: "list available bastion AMIs",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		amiList, err := getAMIList()
+		amiList, err := getAMIList(viper.GetString("ami-list-region"), "")
 		if err != nil {
 			return err
 		}
@@ -82,7 +94,7 @@ var bastionAMIList = &cobra.Command{
 	},
 }
 
-func getAMIList() ([]*ec2.Image, error) {
+func getAMIList(region, releaseTag string) ([]*ec2.Image, error) {
 	ownerID := "933693344490"
 	creds := credentials.NewChainCredentials(
 		[]credentials.Provider{
@@ -96,19 +108,28 @@ func getAMIList() ([]*ec2.Image, error) {
 	ec2client := ec2.New(session.New(&aws.Config{
 		Credentials: creds,
 		MaxRetries:  aws.Int(3),
-		Region:      aws.String(viper.GetString("ami-list-region")),
+		Region:      aws.String(region),
 	}))
+
+	filters := []*ec2.Filter{
+		{
+			Name:   aws.String("tag:opsee"),
+			Values: []*string{aws.String("bastion")},
+		},
+	}
+
+	if releaseTag != "" {
+		filters = append(filters, &ec2.Filter{
+			Name:   aws.String("tag:release"),
+			Values: []*string{aws.String(releaseTag)},
+		})
+	}
 
 	imageOutput, err := ec2client.DescribeImages(&ec2.DescribeImagesInput{
 		Owners: []*string{
 			aws.String(ownerID),
 		},
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("tag:opsee"),
-				Values: []*string{aws.String("bastion")},
-			},
-		},
+		Filters: filters,
 	})
 
 	if err != nil {
