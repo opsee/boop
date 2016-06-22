@@ -213,12 +213,7 @@ var cfnUpdate = &cobra.Command{
 		}
 
 		stackName := "opsee-stack-" + u.CustomerId
-		stack, err := findStack(u, stackName, opseeServices)
-		if err != nil {
-			return err
-		}
-
-		if stack.Stack != nil {
+		return doStacks(u, stackName, opseeServices, func(stack *cfnStack) error {
 			log.INFO.Printf("found stack: %s in %s\n", *stack.Stack.StackId, stack.Region)
 
 			templateBytes, err := stack.getCFNTemplate()
@@ -293,9 +288,9 @@ var cfnUpdate = &cobra.Command{
 				stk := descResponse.Stacks[0]
 				fmt.Printf("update complete: %s, %s\n", *stk.StackStatus, *stk.StackStatusReason)
 			}
-		}
 
-		return nil
+			return nil
+		})
 	},
 }
 
@@ -413,6 +408,38 @@ func updateStackParam(params []*cloudformation.Parameter, key string, newValue s
 			*p.ParameterValue = newValue
 		}
 	}
+}
+
+func doStacks(user *schema.User, stackname string, opseeServices *svc.OpseeServices, stackFunc func(*cfnStack) error) error {
+	userCreds, err := opseeServices.GetRoleCreds(user)
+	if err != nil {
+		return errors.NewSystemErrorF("cannot obtain AWS creds for user: %s", user.Id)
+	}
+
+	staticCreds := credentials.NewStaticCredentials(
+		*userCreds.AccessKeyID, *userCreds.SecretAccessKey, *userCreds.SessionToken)
+
+	for _, region := range regionList {
+		log.INFO.Printf("checking %s\n", region)
+		// TODO reuse existing client/session
+		cfnClient := cloudformation.New(session.New(), aws.NewConfig().WithCredentials(staticCreds).WithRegion(region))
+		descResponse, _ := cfnClient.DescribeStacks(&cloudformation.DescribeStacksInput{
+			StackName: aws.String(stackname),
+		})
+
+		for _, stack := range descResponse.Stacks {
+			err = stackFunc(&cfnStack{
+				Creds:  staticCreds,
+				Region: region,
+				Stack:  stack,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func findStack(user *schema.User, stackname string, opseeServices *svc.OpseeServices) (*cfnStack, error) {
