@@ -94,7 +94,7 @@ func rcopy(dst, src reflect.Value, root bool) {
 		dst.Set(s)
 		for _, k := range src.MapKeys() {
 			v := src.MapIndex(k)
-			v2 := reflect.New(v.Type()).Elem()
+			v2 := reflect.New(dst.Type().Elem()).Elem()
 			rcopy(v2, v, false)
 			dst.SetMapIndex(k, v2)
 		}

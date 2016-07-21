@@ -1,45 +1,10 @@
 package schema
 
-import (
-	"sync"
-
-	opsee_types "github.com/opsee/protobuf/opseeproto/types"
-)
+import opsee_types "github.com/opsee/protobuf/opseeproto/types"
 
 func init() {
-	opsee_types.PermissionsRegistry.Register("user", &opsee_types.PermissionsBitmap{
-		map[int]string{
-			0: "admin",
-			1: "edit",
-			2: "billing",
-		},
-		sync.RWMutex{},
-	})
-
-	opsee_types.PermissionsRegistry.Register("team", &opsee_types.PermissionsBitmap{
-		map[int]string{
-			0: "multi-user",
-			1: "multibastion",
-			2: "on-site support",
-		},
-		sync.RWMutex{},
-	})
-}
-
-// Wrapper for check if requesting user can modify target
-func CheckRead(requestor *User, target interface{}, requiredPerms ...string) error {
-	if requestor == nil || !requestor.CanRead(target, requiredPerms...) {
-		return errNoRead
-	}
-	return nil
-}
-
-// Wrapper for check if requesting user can modify target
-func CheckModify(requestor *User, target interface{}, requiredPerms ...string) error {
-	if requestor == nil || !requestor.CanModify(target, requiredPerms...) {
-		return errNoModify
-	}
-	return nil
+	opsee_types.PermissionsRegistry.Register("user", opsee_types.NewPermissionsBitmap("admin", "edit", "billing"))
+	opsee_types.PermissionsRegistry.Register("team", opsee_types.NewPermissionsBitmap("multi_user", "multi_bastion", "on_site_support"))
 }
 
 // Wrapper for Opsee Admin permissions check that does null check

@@ -2,6 +2,8 @@ package svc
 
 import (
 	"crypto/tls"
+	"time"
+
 	log "github.com/mborsuk/jwalterweatherman"
 	"github.com/opsee/basic/schema"
 	opsee_aws_credentials "github.com/opsee/basic/schema/aws/credentials"
@@ -9,30 +11,29 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	grpc_credentials "google.golang.org/grpc/credentials"
-	"time"
 )
 
 const tcpTimeout = time.Duration(3) * time.Second
 
 type OpseeServices struct {
-	vape     service.VapeClient
+	cats     service.CatsClient
 	spanx    service.SpanxClient
 	keelhaul service.KeelhaulClient
 	//	awsSession session.Session
 }
 
-func (o *OpseeServices) initVape() {
-	if o.vape != nil {
+func (o *OpseeServices) initCats() {
+	if o.cats != nil {
 		return
 	}
-	conn, err := grpc.Dial("vape.in.opsee.com:443",
+	conn, err := grpc.Dial("cats.in.opsee.com:443",
 		grpc.WithTransportCredentials(grpc_credentials.NewTLS(&tls.Config{})),
 		grpc.WithTimeout(tcpTimeout),
 		grpc.WithBlock())
 	if err != nil {
 		log.ERROR.Fatal(err)
 	}
-	o.vape = service.NewVapeClient(conn)
+	o.cats = service.NewCatsClient(conn)
 }
 
 func (o *OpseeServices) initSpanx() {
@@ -89,9 +90,9 @@ func (o *OpseeServices) GetBastionStates(customerIDs []string, filters ...*servi
 }
 
 func (o *OpseeServices) GetUser(email string, custID string) (*schema.User, error) {
-	o.initVape()
+	o.initCats()
 
-	userResp, err := o.vape.GetUser(context.Background(), &service.GetUserRequest{
+	userResp, err := o.cats.GetUser(context.Background(), &service.GetUserRequest{
 		Email:      email,
 		CustomerId: custID,
 	})
